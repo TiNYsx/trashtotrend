@@ -144,7 +144,6 @@ export default function IceBathPage() {
             <LanguageToggle />
             <div className="flex items-center gap-2">
               <Snowflake className="h-5 w-5 text-accent" />
-              <span className="font-display font-bold">HOOP</span>
             </div>
           </div>
         </div>

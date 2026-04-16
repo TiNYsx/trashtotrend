@@ -6,7 +6,7 @@ interface LogoProps {
   variant?: 'chrome' | 'symbol' | 'full'
 }
 
-export function Logo({ size = 'md', showText = true, variant = 'full' }: LogoProps) {
+export function Logo({ size = 'md', showText = false, variant = 'full' }: LogoProps) {
   const sizes = {
     sm: { icon: 32, text: 'text-lg', padding: 'gap-2' },
     md: { icon: 48, text: 'text-xl', padding: 'gap-3' },

@@ -229,7 +229,6 @@ export default function EventRegisterPage() {
             <LanguageToggle />
             <div className="flex items-center gap-2">
               <QrCode className="h-5 w-5 text-primary" />
-              <span className="font-display font-bold">HOOP</span>
             </div>
           </div>
         </div>

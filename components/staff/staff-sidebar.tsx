@@ -78,7 +78,6 @@ export function StaffSidebar({ username }: { username: string }) {
               />
             </div>
             <div className="flex flex-col">
-              <span className="font-display text-lg font-bold chrome-text">HOOP</span>
               <span className="font-display text-xs chrome-text-subtle">Admin Panel</span>
             </div>
           </div>

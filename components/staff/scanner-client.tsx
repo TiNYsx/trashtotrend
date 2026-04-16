@@ -62,7 +62,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
   useEffect(() => {
     if (!scanning || !scannerRef.current) return
 
-    let scanner: { stop: () => Promise<void>; clear: () => void } | null = null
+    let scanner: { stop: () => Promise<void>; clear: () => void; start: any } | null = null
 
     const startScanner = async () => {
       const { Html5Qrcode } = await import("html5-qrcode")

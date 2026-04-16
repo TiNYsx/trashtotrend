@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { QrCode, MapPin, Trophy, LogOut, Loader2, CheckCircle, Lock, Sparkles, RefreshCw, Home } from 'lucide-react'
+import { QrCode, MapPin, Trophy, LogOut, Loader2, CheckCircle, Lock, Home } from 'lucide-react'
 import { LanguageToggle } from '@/components/language-toggle'
 import { useLanguage } from '@/components/providers'
 import QRCode from 'qrcode'
@@ -134,11 +136,17 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-primary" />
-            </div>
+            <Link href="/" className="relative w-12 h-12">
+              <Image
+                src="/images/Hoop 1.png"
+                alt="HOOP"
+                width={48}
+                height={48}
+                className="object-contain"
+              />
+            </Link>
             <div>
-              <h1 className="font-display font-bold">{t.welcome}, {userData.name}</h1>
+              <h1 className="font-display font-bold chrome-text-subtle">{t.welcome}, {userData.name}</h1>
               <p className="text-sm text-muted-foreground">{userData.email}</p>
             </div>
           </div>
@@ -326,7 +334,7 @@ export default function DashboardPage() {
               {userData.post_survey_completed ? (
                 <CheckCircle className="h-5 w-5 text-primary" />
               ) : userData.checkpoint_count >= userData.total_checkpoints ? (
-                <Sparkles className="h-5 w-5 text-accent" />
+                <Trophy className="h-5 w-5 text-accent" />
               ) : (
                 <Lock className="h-5 w-5 text-muted-foreground" />
               )}
