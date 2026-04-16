@@ -27,6 +27,69 @@ const PERSONA_TYPES = {
   E: { name: 'Resetter', icon: '🔄', color: 'text-accent' },
 }
 
+const FALLBACK_QUESTIONS: QuizQuestion[] = [
+  {
+    id: 1,
+    question_en: 'How do you approach creative projects?',
+    question_th: 'คุณเข้าหาโปรเจกต์ที่สร้างสรรค์อย่างไร?',
+    options: [
+      { text_en: 'I love starting from scratch and building something new', text_th: 'ฉันชอบเริ่มจากศูนย์และสร้างสิ่งใหม่', type: 'A' },
+      { text_en: 'I prefer exploring different approaches before deciding', text_th: 'ฉันชอบสำรวจแนวทางต่างๆ ก่อนตัดสินใจ', type: 'D' },
+      { text_en: 'I observe and learn from others first', text_th: 'ฉันสังเกตและเรียนรู้จากผู้อื่นก่อน', type: 'B' },
+      { text_en: 'I jump in and figure it out as I go', text_th: 'ฉันลงมือทำเลยแล้วค่อยปรับตัว', type: 'C' },
+      { text_en: 'I reset and simplify complex ideas', text_th: 'ฉันทำให้ความคิดซับซ้อนเรียบง่ายขึ้น', type: 'E' },
+    ]
+  },
+  {
+    id: 2,
+    question_en: 'What draws you to sustainability?',
+    question_th: 'อะไรดึงดูดคุณในเรื่องความยั่งยืน?',
+    options: [
+      { text_en: 'Creating new things from waste materials', text_th: 'การสร้างสิ่งใหม่จากวัสดุเหลือใช้', type: 'A' },
+      { text_en: 'Discovering hidden connections in nature', text_th: 'การค้นพบความเชื่อมโยงที่ซ่อนเร้นในธรรมชาติ', type: 'D' },
+      { text_en: 'Understanding the bigger picture', text_th: 'การเข้าใจภาพรวม', type: 'B' },
+      { text_en: 'Taking action and making immediate impact', text_th: 'การลงมือทำและสร้างผลกระทบทันที', type: 'C' },
+      { text_en: 'Finding clarity in environmental chaos', text_th: 'การหาความชัดเจนในความวุ่นวายด้านสิ่งแวดล้อม', type: 'E' },
+    ]
+  },
+  {
+    id: 3,
+    question_en: 'At an exhibition, you typically...',
+    question_th: 'เมื่อไปงานนิทรรศการ คุณมักจะ...',
+    options: [
+      { text_en: 'Create your own content to share', text_th: 'สร้างคอนเทนต์ของตัวเองเพื่อแชร์', type: 'A' },
+      { text_en: 'Wander and discover unexpected things', text_th: 'เดินชมและค้นพบสิ่งไม่คาดคิด', type: 'D' },
+      { text_en: 'Take time to understand each exhibit deeply', text_th: 'ใช้เวลาทำความเข้าใจแต่ละรายการอย่างลึกซึ้ง', type: 'B' },
+      { text_en: 'Try every interactive activity available', text_th: 'ลองทุกกิจกรรมที่โต้ตอบได้', type: 'C' },
+      { text_en: 'Focus on the most important messages', text_th: 'โฟกัสที่ข้อความสำคัญที่สุด', type: 'E' },
+    ]
+  },
+  {
+    id: 4,
+    question_en: 'How do you prefer to learn?',
+    question_th: 'คุณชอบเรียนรู้อย่างไร?',
+    options: [
+      { text_en: 'Through hands-on creation and making', text_th: 'ผ่านการลงมือทำจริง', type: 'A' },
+      { text_en: 'Through exploration and discovery', text_th: 'ผ่านการสำรวจและค้นพบ', type: 'D' },
+      { text_en: 'Through careful observation and reading', text_th: 'ผ่านการสังเกตและอ่านอย่างระมัดระวัง', type: 'B' },
+      { text_en: 'Through games and challenges', text_th: 'ผ่านเกมและการท้าทาย', type: 'C' },
+      { text_en: 'Through simplified explanations', text_th: 'ผ่านคำอธิบายที่เรียบง่าย', type: 'E' },
+    ]
+  },
+  {
+    id: 5,
+    question_en: 'What motivates you most?',
+    question_th: 'อะไรเป็นแรงจูงใจหลักของคุณ?',
+    options: [
+      { text_en: 'Making something beautiful from waste', text_th: 'การสร้างสิ่งสวยงามจากของเหลือใช้', type: 'A' },
+      { text_en: 'Discovering how things work together', text_th: 'การค้นพบว่าสิ่งต่างๆ ทำงานร่วมกันอย่างไร', type: 'D' },
+      { text_en: 'Understanding the deeper meaning', text_th: 'การเข้าใจความหมายที่ลึกซึ้ง', type: 'B' },
+      { text_en: 'Winning and achieving goals', text_th: 'การชนะและบรรลุเป้าหมาย', type: 'C' },
+      { text_en: 'Restoring balance and order', text_th: 'การฟื้นฟูความสมดุลและความเป็นระเบียบ', type: 'E' },
+    ]
+  },
+]
+
 export default function QuizPage() {
   const router = useRouter()
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
@@ -45,10 +108,15 @@ export default function QuizPage() {
     try {
       const res = await fetch('/api/quiz')
       const data = await res.json()
-      setQuestions(data)
+      if (data && data.length > 0) {
+        setQuestions(data)
+      } else {
+        setQuestions(FALLBACK_QUESTIONS)
+      }
       setIsLoading(false)
     } catch (error) {
       console.error('Failed to fetch questions:', error)
+      setQuestions(FALLBACK_QUESTIONS)
       setIsLoading(false)
     }
   }
