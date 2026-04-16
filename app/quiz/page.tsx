@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, ArrowLeft, Sparkles, Loader2 } from 'lucide-react'
 import { LanguageToggle } from '@/components/language-toggle'
+import { useLanguage } from '@/components/providers'
 
 interface QuizOption {
   text_en: string
@@ -92,6 +93,7 @@ const FALLBACK_QUESTIONS: QuizQuestion[] = [
 
 export default function QuizPage() {
   const router = useRouter()
+  const { lang } = useLanguage()
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [scores, setScores] = useState<Record<string, number>>({ A: 0, B: 0, C: 0, D: 0, E: 0 })
@@ -157,7 +159,7 @@ export default function QuizPage() {
       <main className="flex min-h-dvh items-center justify-center gradient-bg">
         <div className="text-center space-y-4">
           <Loader2 className="h-10 w-10 text-primary animate-spin mx-auto" />
-          <p className="text-muted-foreground">Loading quiz...</p>
+          <p className="text-muted-foreground">{lang === 'th' ? 'กำลังโหลด...' : 'Loading quiz...'}</p>
         </div>
       </main>
     )
@@ -168,7 +170,7 @@ export default function QuizPage() {
       <main className="flex min-h-dvh items-center justify-center gradient-bg">
         <div className="text-center space-y-4 px-6">
           <Sparkles className="h-10 w-10 text-muted-foreground mx-auto" />
-          <p className="text-muted-foreground">Quiz questions coming soon...</p>
+          <p className="text-muted-foreground">{lang === 'th' ? 'คำถามกำลังจะมา...' : 'Quiz questions coming soon...'}</p>
         </div>
       </main>
     )
@@ -180,11 +182,12 @@ export default function QuizPage() {
     return (
       <main className="flex min-h-dvh items-center justify-center gradient-bg">
         <div className="text-center space-y-4 px-6">
-          <p className="text-muted-foreground">Loading question...</p>
+          <p className="text-muted-foreground">{lang === 'th' ? 'กำลังโหลดคำถาม...' : 'Loading question...'}</p>
         </div>
       </main>
     )
   }
+  
   const progress = ((currentIndex + 1) / questions.length) * 100
 
   return (
@@ -204,7 +207,7 @@ export default function QuizPage() {
             className="flex items-center gap-2 text-muted-foreground transition-colors disabled:opacity-30 hover:text-foreground"
           >
             <ArrowLeft className="h-5 w-5" />
-            <span className="text-sm">Back</span>
+            <span className="text-sm">{lang === 'th' ? 'กลับ' : 'Back'}</span>
           </button>
           
           <div className="flex items-center gap-4">
@@ -219,7 +222,7 @@ export default function QuizPage() {
         {/* Progress */}
         <div className="mb-12 space-y-3">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Question {currentIndex + 1} of {questions.length}</span>
+            <span className="text-muted-foreground">{lang === 'th' ? 'คำถาม' : 'Question'} {currentIndex + 1} {lang === 'th' ? 'จาก' : 'of'} {questions.length}</span>
             <span className="font-semibold text-primary">{Math.round(progress)}%</span>
           </div>
           <div className="h-2 rounded-full bg-secondary overflow-hidden">
@@ -242,14 +245,11 @@ export default function QuizPage() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: direction * -50 }}
               transition={{ duration: 0.3 }}
-              className="w-full max-w-md text-center space-y-8"
+              className="w-full max-w-md text-center space-y-4"
             >
               <h2 className="font-display text-2xl md:text-3xl font-bold leading-relaxed">
-                {currentQuestion.question_en}
+                {lang === 'th' ? currentQuestion.question_th : currentQuestion.question_en}
               </h2>
-              <p className="text-muted-foreground">
-                {currentQuestion.question_th}
-              </p>
             </motion.div>
           </AnimatePresence>
         </div>
@@ -272,8 +272,7 @@ export default function QuizPage() {
                   className="group w-full p-4 rounded-xl border border-border glass text-left transition-all hover:border-primary hover:bg-primary/10 disabled:opacity-50"
                 >
                   <span className="text-muted-foreground text-sm mr-2">{idx + 1}.</span>
-                  <span className="font-medium">{option.text_en}</span>
-                  <p className="text-muted-foreground text-sm mt-1">{option.text_th}</p>
+                  <span className="font-medium">{lang === 'th' ? option.text_th : option.text_en}</span>
                 </button>
               ))}
             </motion.div>

@@ -105,6 +105,8 @@ export default function EventRegisterPage() {
       setCurrentSurveyQ(currentSurveyQ - 1)
     } else if (step === 'survey') {
       setStep('form')
+    } else {
+      router.back()
     }
   }
 
