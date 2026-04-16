@@ -1,48 +1,81 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { LanguageToggle } from "@/components/language-toggle"
 import { useLanguage } from "@/components/providers"
 import { 
   ArrowRight, 
   QrCode, 
   Trophy, 
-  MapPin, 
-  Sparkles,
-  Recycle,
-  Users,
+  MapPin,
   Zap
 } from "lucide-react"
 
 export default function HomeClient() {
   const { lang } = useLanguage()
+
+  const t = {
+    login: lang === 'th' ? 'เข้าสู่ระบบ' : 'Login',
+    staffPortal: lang === 'th' ? 'พอร์ทัลเจ้าหน้าที่' : 'Staff Portal',
+    startJourney: lang === 'th' ? 'เริ่มต้นการเดินทาง' : 'Start Your Journey',
+    explore: lang === 'th' ? 'สำรวจ' : 'Explore',
+    scanCollect: lang === 'th' ? 'สแกนและสะสม' : 'Scan & Collect',
+    scanDesc: lang === 'th' ? 'เช็คอินที่บูธ' : 'Check in at booths',
+    earnRewards: lang === 'th' ? 'รับรางวัล' : 'Earn Rewards',
+    rewardsDesc: lang === 'th' ? 'ทำ миссияทั้งหมด' : 'Complete all missions',
+    joinLoop: lang === 'th' ? 'เข้าร่วมวงจร' : 'Join the Loop',
+    loopDesc: lang === 'th' ? 'เศรษฐกิจหมุนเวียน' : 'Circular economy',
+    bringCan: lang === 'th' ? 'อย่าลืม: นำกระป๋องอะลูมิเนียมของคุณมาเพื่อเข้าร่วม' : 'Remember: Bring your own aluminium can to participate',
+    footer: lang === 'th' ? 'นิทรรศการเศรษฐกิจหมุนเวียน • โครงการวงจรอะลูมิเนียม' : 'Circular Economy Exhibition • Aluminium Loop Initiative',
+    tagline: 'From Trash to Trend',
+    taglineTh: 'จากขยะสู่แนวโน้ม',
+    description: lang === 'th' 
+      ? 'สัมผัสการเปลี่ยนแปลงของอะลูมิเนียมจากของเสียสู่คุณค่า เข้าร่วมการเดินทางสู่เศรษฐกิจหมุนเวียนและค้นพบว่าขยะกลายเป็นสมบัติได้อย่างไร'
+      : 'Experience the transformation of aluminium from waste to worth. Join our circular economy journey and discover how trash becomes treasure.',
+  }
+
   return (
     <main className="relative min-h-dvh overflow-hidden">
       {/* Animated Background */}
       <div className="absolute inset-0 gradient-bg">
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute left-1/4 top-1/4 h-96 w-96 animate-float rounded-full bg-primary/20 blur-[128px]" />
-          <div className="absolute right-1/4 top-1/2 h-80 w-80 animate-float rounded-full bg-accent/20 blur-[100px]" style={{ animationDelay: '-3s' }} />
-          <div className="absolute bottom-1/4 left-1/2 h-72 w-72 animate-float rounded-full bg-primary/10 blur-[120px]" style={{ animationDelay: '-5s' }} />
-        </div>
+        {/* Chrome gradient overlay */}
+        <div className="absolute inset-0 opacity-40" style={{
+          background: 'radial-gradient(ellipse at 50% 0%, rgba(192, 192, 192, 0.15) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(128, 128, 128, 0.1) 0%, transparent 40%)'
+        }} />
+        
+        {/* Floating orbs */}
+        <div className="absolute left-1/4 top-1/4 h-[500px] w-[500px] animate-float rounded-full" style={{
+          background: 'radial-gradient(circle, rgba(192, 192, 192, 0.15) 0%, transparent 70%)',
+          filter: 'blur(60px)'
+        }} />
+        <div className="absolute right-1/4 top-1/2 h-[400px] w-[400px] animate-float rounded-full" style={{
+          background: 'radial-gradient(circle, rgba(150, 150, 170, 0.1) 0%, transparent 70%)',
+          filter: 'blur(50px)',
+          animationDelay: '-3s'
+        }} />
+        
         {/* Grid pattern */}
-        <div className="absolute inset-0 opacity-5" style={{
-          backgroundImage: `linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)`,
-          backgroundSize: '60px 60px'
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)`,
+          backgroundSize: '80px 80px'
         }} />
       </div>
 
       {/* Floating particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(6)].map((_, i) => (
+        {[...Array(8)].map((_, i) => (
           <div
             key={i}
-            className="absolute w-2 h-2 rounded-full bg-primary/40 animate-float"
+            className="absolute rounded-full animate-float"
             style={{
-              left: `${15 + i * 15}%`,
-              top: `${20 + (i % 3) * 25}%`,
-              animationDelay: `${i * 0.8}s`,
-              animationDuration: `${5 + i}s`
+              width: i % 3 === 0 ? '4px' : '2px',
+              height: i % 3 === 0 ? '4px' : '2px',
+              background: i % 2 === 0 ? 'rgba(192, 192, 192, 0.4)' : 'rgba(160, 160, 180, 0.3)',
+              left: `${10 + i * 12}%`,
+              top: `${15 + (i % 4) * 22}%`,
+              animationDelay: `${i * 0.6}s`,
+              animationDuration: `${6 + i}s`
             }}
           />
         ))}
@@ -50,75 +83,97 @@ export default function HomeClient() {
 
       <div className="relative z-10 flex min-h-dvh flex-col">
         {/* Header */}
-        <header className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Recycle className="h-8 w-8 text-primary animate-rotate-slow" />
-              <div className="absolute inset-0 animate-glow-pulse">
-                <Recycle className="h-8 w-8 text-primary/50 blur-sm" />
-              </div>
+        <header className="flex items-center justify-between px-6 py-5">
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="relative w-12 h-12">
+              <Image
+                src="/images/Hoop 1.png"
+                alt="HOOP"
+                width={48}
+                height={48}
+                className="object-contain transition-transform group-hover:scale-105"
+              />
             </div>
-            <span className="font-display text-xl font-bold tracking-tight">HOOP</span>
-          </div>
-          <div className="flex items-center gap-4">
+            <span className="font-display text-2xl font-bold tracking-tight chrome-text">
+              HOOP
+            </span>
+          </Link>
+          <div className="flex items-center gap-5">
             <LanguageToggle />
             <Link
               href="/login"
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground hover:opacity-80"
             >
-              Login
+              {t.login}
             </Link>
             <Link
               href="/staff/login"
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground hover:opacity-80"
             >
-              Staff Portal
+              {t.staffPortal}
             </Link>
           </div>
         </header>
 
         {/* Hero Section */}
         <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-          <div className="text-center max-w-lg mx-auto space-y-8">
-            {/* Title */}
-            <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-              <h1 className="font-display text-7xl md:text-8xl font-bold tracking-tight text-primary text-glow">
-                Hoop
+          <div className="text-center max-w-lg mx-auto space-y-10">
+            {/* Hoop Logo Image */}
+            <div className="relative mx-auto animate-fade-in-up" style={{ animationDelay: '0s' }}>
+              <div className="relative w-48 h-48 mx-auto">
+                <Image
+                  src="/images/Hoop main.png"
+                  alt="HOOP"
+                  width={192}
+                  height={192}
+                  className="object-contain drop-shadow-2xl"
+                  priority
+                />
+              </div>
+              {/* Glow effect behind logo */}
+              <div className="absolute inset-0 -z-10 mx-auto w-64 h-64 rounded-full" style={{
+                background: 'radial-gradient(circle, rgba(192, 192, 192, 0.2) 0%, transparent 70%)',
+                filter: 'blur(40px)'
+              }} />
+            </div>
+
+            {/* Title with Chrome Effect */}
+            <div className="space-y-3 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+              <h1 className="font-display text-6xl md:text-7xl font-bold tracking-tight chrome-text">
+                HOOP
               </h1>
-              <p className="font-display text-xl md:text-2xl font-medium text-muted-foreground">
-                From Trash to Trend
+              <p className="font-display text-lg md:text-xl font-medium chrome-text-subtle">
+                {lang === 'th' ? t.taglineTh : t.tagline}
               </p>
             </div>
 
             {/* Description */}
-            <p className="text-muted-foreground text-lg leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-              {lang === 'th' 
-                ? 'สัมผัสการเปลี่ยนแปลงของอะลูมิเนียมจากของเสียสู่คุณค่า เข้าร่วมการเดินทางสู่เศรษฐกิจหมุนเวียนและค้นพบว่าขยะกลายเป็นสมบัติได้อย่างไร'
-                : 'Experience the transformation of aluminium from waste to worth. Join our circular economy journey and discover how trash becomes treasure.'}
+            <p className="text-muted-foreground text-base leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+              {t.description}
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col gap-4 pt-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+            <div className="flex flex-col gap-4 pt-2 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
               <Link
                 href="/quiz"
-                className="group relative flex h-14 items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground font-semibold transition-all hover:scale-[1.02] glow-primary"
+                className="group relative flex h-14 items-center justify-center gap-3 rounded-xl chrome-button font-semibold transition-all hover:scale-[1.02] glow-primary"
               >
-                <span>Start Your Journey</span>
-                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-                <div className="absolute inset-0 rounded-xl animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent bg-[length:200%_100%]" />
+                <span className="chrome-text">{t.startJourney}</span>
+                <ArrowRight className="h-5 w-5 chrome-text-subtle transition-transform group-hover:translate-x-1" />
+                <div className="absolute inset-0 rounded-xl animate-chrome-shine" />
               </Link>
 
               <div className="grid grid-cols-2 gap-3">
                 <Link
                   href="/about"
-                  className="flex h-12 items-center justify-center gap-2 rounded-xl border border-border glass font-medium transition-all hover:bg-secondary/50"
+                  className="flex h-12 items-center justify-center gap-2 rounded-xl chrome-border glass font-medium transition-all hover:bg-secondary/30"
                 >
-                  <MapPin className="h-4 w-4" />
-                  Explore
+                  <MapPin className="h-4 w-4 text-primary" />
+                  {t.explore}
                 </Link>
                 <Link
                   href="/ice-bath"
-                  className="flex h-12 items-center justify-center gap-2 rounded-xl border border-accent/50 glass font-medium transition-all hover:bg-accent/10 group"
+                  className="flex h-12 items-center justify-center gap-2 rounded-xl chrome-border glass font-medium transition-all hover:bg-secondary/30 group"
                 >
                   <Zap className="h-4 w-4 text-accent" />
                   <span className="text-accent">Ice Bath</span>
@@ -127,8 +182,8 @@ export default function HomeClient() {
             </div>
 
             {/* Requirement Notice */}
-            <p className="text-xs text-muted-foreground animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-              Remember: Bring your own aluminium can to participate
+            <p className="text-xs text-muted-foreground/70 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+              {t.bringCan}
             </p>
           </div>
         </div>
@@ -138,20 +193,20 @@ export default function HomeClient() {
           <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto">
             <FeatureCard
               icon={<QrCode className="h-5 w-5" />}
-              title="Scan & Collect"
-              description="Check in at booths"
+              title={t.scanCollect}
+              description={t.scanDesc}
               delay={0.4}
             />
             <FeatureCard
               icon={<Trophy className="h-5 w-5" />}
-              title="Earn Rewards"
-              description="Complete all 7 stations"
+              title={t.earnRewards}
+              description={t.rewardsDesc}
               delay={0.5}
             />
             <FeatureCard
-              icon={<Users className="h-5 w-5" />}
-              title="Join the Loop"
-              description="Circular economy"
+              icon={<MapPin className="h-5 w-5" />}
+              title={t.joinLoop}
+              description={t.loopDesc}
               delay={0.6}
             />
           </div>
@@ -159,8 +214,8 @@ export default function HomeClient() {
 
         {/* Footer */}
         <footer className="px-6 py-6 text-center">
-          <p className="text-xs text-muted-foreground">
-            Circular Economy Exhibition • Aluminium Loop Initiative
+          <p className="text-xs text-muted-foreground/50">
+            {t.footer}
           </p>
         </footer>
       </div>
@@ -181,13 +236,13 @@ function FeatureCard({
 }) {
   return (
     <div 
-      className="group glass rounded-xl p-4 text-center transition-all hover:bg-secondary/30 animate-fade-in-up"
+      className="group rounded-xl p-4 text-center transition-all hover:bg-secondary/20 animate-fade-in-up chrome-border glass"
       style={{ animationDelay: `${delay}s` }}
     >
-      <div className="flex justify-center mb-2 text-primary group-hover:scale-110 transition-transform">
+      <div className="flex justify-center mb-2 text-primary group-hover:scale-110 transition-transform duration-300">
         {icon}
       </div>
-      <h3 className="font-semibold text-sm mb-1">{title}</h3>
+      <h3 className="font-semibold text-sm mb-1 text-primary">{title}</h3>
       <p className="text-xs text-muted-foreground">{description}</p>
     </div>
   )

@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { useLanguage } from "@/components/providers"
 import { LanguageToggle } from "@/components/language-toggle"
@@ -10,7 +11,6 @@ import {
   LayoutDashboard,
   Store,
   ScanLine,
-  FileText,
   Users,
   ClipboardList,
   Settings,
@@ -56,15 +56,31 @@ export function StaffSidebar({ username }: { username: string }) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-300 lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-sidebar transition-transform duration-300 lg:static lg:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
+        style={{
+          borderImage: 'linear-gradient(180deg, rgba(192, 192, 192, 0.3) 0%, rgba(192, 192, 192, 0.1) 100%) 1'
+        }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-sidebar-border px-5 py-4">
-          <div className="flex flex-col">
-            <span className="font-serif text-sm font-bold text-foreground">FROM TRASH</span>
-            <span className="font-serif text-xs italic text-accent">To Trend</span>
+        <div className="flex items-center justify-between border-b px-5 py-5" style={{
+          borderImage: 'linear-gradient(90deg, rgba(192, 192, 192, 0.2) 0%, transparent 100%) 1'
+        }}>
+          <div className="flex items-center gap-3">
+            <div className="relative w-10 h-10">
+              <Image
+                src="/images/Hoop 1.png"
+                alt="HOOP"
+                width={40}
+                height={40}
+                className="object-contain"
+              />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-display text-lg font-bold chrome-text">HOOP</span>
+              <span className="font-display text-xs chrome-text-subtle">Admin Panel</span>
+            </div>
           </div>
           <button
             onClick={() => setMobileOpen(false)}
@@ -84,10 +100,10 @@ export function StaffSidebar({ username }: { username: string }) {
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
                   active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
+                    ? "bg-white/10 text-primary shadow-sm"
+                    : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -98,7 +114,9 @@ export function StaffSidebar({ username }: { username: string }) {
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-sidebar-border px-3 py-4">
+        <div className="border-t px-3 py-4" style={{
+          borderImage: 'linear-gradient(90deg, rgba(192, 192, 192, 0.2) 0%, transparent 100%) 1'
+        }}>
           <div className="mb-3 flex items-center justify-between px-3">
             <span className="text-xs text-muted-foreground">{username}</span>
             <LanguageToggle />
@@ -106,7 +124,7 @@ export function StaffSidebar({ username }: { username: string }) {
           <form action={logout}>
             <button
               type="submit"
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent/50 hover:text-foreground"
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
             >
               <LogOut className="h-4 w-4" />
               {t("logout")}

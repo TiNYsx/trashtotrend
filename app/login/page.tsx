@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Loader2, Recycle } from 'lucide-react'
+import Image from 'next/image'
+import { ArrowRight, Loader2 } from 'lucide-react'
 import { LanguageToggle } from '@/components/language-toggle'
 import { useLanguage } from '@/components/providers'
 
@@ -56,20 +57,29 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative min-h-dvh gradient-bg">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute top-1/3 left-1/2 -translate-x-1/2 h-80 w-80 rounded-full bg-primary/15 blur-[100px]"
-          animate={{ opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 4, repeat: Infinity }}
-        />
+    <main className="relative min-h-dvh gradient-bg overflow-hidden">
+      {/* Chrome Background Effects */}
+      <div className="absolute inset-0">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full" style={{
+          background: 'radial-gradient(circle, rgba(192, 192, 192, 0.1) 0%, transparent 70%)',
+          filter: 'blur(80px)'
+        }} />
       </div>
 
       <div className="relative z-10 flex min-h-dvh flex-col px-6 py-8">
+        {/* Header */}
         <div className="flex items-center justify-between mb-12">
-          <Link href="/" className="flex items-center gap-2">
-            <Recycle className="h-6 w-6 text-primary" />
-            <span className="font-display font-bold">HOOP</span>
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="relative w-10 h-10">
+              <Image
+                src="/images/Hoop 1.png"
+                alt="HOOP"
+                width={40}
+                height={40}
+                className="object-contain"
+              />
+            </div>
+            <span className="font-display text-xl font-bold chrome-text">HOOP</span>
           </Link>
           <div className="flex items-center gap-4">
             <LanguageToggle />
@@ -83,12 +93,29 @@ export default function LoginPage() {
         </div>
 
         <div className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto w-full">
+          {/* Logo */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-6"
+          >
+            <div className="relative w-24 h-24">
+              <Image
+                src="/images/Hoop 1.png"
+                alt="HOOP"
+                width={96}
+                height={96}
+                className="object-contain drop-shadow-xl"
+              />
+            </div>
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-8"
           >
-            <h1 className="font-display text-3xl font-bold mb-2">{t.welcomeBack}</h1>
+            <h1 className="font-display text-3xl font-bold chrome-text mb-2">{t.welcomeBack}</h1>
             <p className="text-muted-foreground">{t.signInCont}</p>
           </motion.div>
 
@@ -100,25 +127,25 @@ export default function LoginPage() {
             className="w-full space-y-4"
           >
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t.email}</label>
+              <label className="text-sm font-medium text-primary">{t.email}</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-12 px-4 rounded-xl bg-secondary/50 border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                className="w-full h-12 px-4 rounded-xl bg-secondary/50 border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/50"
                 placeholder={t.yourEmail}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t.password}</label>
+              <label className="text-sm font-medium text-primary">{t.password}</label>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full h-12 px-4 rounded-xl bg-secondary/50 border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                className="w-full h-12 px-4 rounded-xl bg-secondary/50 border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/50"
                 placeholder={t.yourPassword}
               />
             </div>
@@ -128,14 +155,14 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="group w-full h-14 flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground font-semibold transition-all hover:scale-[1.02] disabled:opacity-50 mt-6"
+              className="group w-full h-14 flex items-center justify-center gap-2 rounded-xl chrome-button font-semibold transition-all hover:scale-[1.02] disabled:opacity-50 mt-6"
             >
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
-                  <span>{t.signIn}</span>
-                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                  <span className="chrome-text">{t.signIn}</span>
+                  <ArrowRight className="h-5 w-5 chrome-text-subtle transition-transform group-hover:translate-x-1" />
                 </>
               )}
             </button>

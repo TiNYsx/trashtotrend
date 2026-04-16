@@ -97,7 +97,7 @@ export default function DashboardPage() {
       <main className="flex min-h-dvh items-center justify-center gradient-bg">
         <div className="text-center space-y-4">
           <Loader2 className="h-10 w-10 text-primary animate-spin mx-auto" />
-          <p className="text-muted-foreground">{t.loading}</p>
+          <p className="text-muted-foreground chrome-text-subtle">{t.loading}</p>
         </div>
       </main>
     )
@@ -165,7 +165,7 @@ export default function DashboardPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass rounded-2xl p-6 mb-6"
+          className="rounded-2xl p-6 mb-6 chrome-border glass"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -205,7 +205,7 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="glass rounded-2xl p-6 mb-6"
+          className="rounded-2xl p-6 mb-6 chrome-border glass"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -256,10 +256,10 @@ export default function DashboardPage() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.3 + idx * 0.05 }}
-                className={`glass rounded-xl p-4 transition-all ${
+                className={`rounded-xl p-4 transition-all chrome-border glass ${
                   checkpoint.completed 
-                    ? 'border-primary/50 bg-primary/5' 
-                    : 'border-border'
+                    ? 'bg-primary/5' 
+                    : ''
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -299,8 +299,8 @@ export default function DashboardPage() {
         >
           <h2 className="font-semibold mb-4">{t.surveys}</h2>
           
-          <div className={`glass rounded-xl p-4 flex items-center justify-between ${
-            userData.pre_survey_completed ? 'border-primary/30' : 'border-border'
+          <div className={`rounded-xl p-4 flex items-center justify-between chrome-border glass ${
+            userData.pre_survey_completed ? 'bg-primary/5' : ''
           }`}>
             <div className="flex items-center gap-3">
               {userData.pre_survey_completed ? (
@@ -308,7 +308,7 @@ export default function DashboardPage() {
               ) : (
                 <div className="w-5 h-5 rounded-full border-2 border-muted-foreground" />
               )}
-              <span>{t.preSurvey}</span>
+              <span className="text-primary">{t.preSurvey}</span>
             </div>
             {userData.pre_survey_completed ? (
               <span className="text-sm text-primary">{t.completed}</span>
@@ -319,8 +319,8 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <div className={`glass rounded-xl p-4 flex items-center justify-between ${
-            userData.post_survey_completed ? 'border-primary/30' : 'border-border'
+          <div className={`rounded-xl p-4 flex items-center justify-between chrome-border glass ${
+            userData.post_survey_completed ? 'bg-primary/5' : ''
           }`}>
             <div className="flex items-center gap-3">
               {userData.post_survey_completed ? (
@@ -349,7 +349,7 @@ export default function DashboardPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="glass rounded-2xl p-6 border border-accent/30"
+            className="rounded-2xl p-6 chrome-border glass"
           >
             <div className="text-center">
               <Trophy className="h-12 w-12 text-accent mx-auto mb-4 animate-glow-pulse" />
