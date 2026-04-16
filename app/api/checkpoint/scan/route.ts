@@ -62,11 +62,6 @@ export async function POST(request: NextRequest) {
       [user.id, checkpoint.id]
     )
 
-    await query(
-      'INSERT INTO scan_events (user_id, staff_id, checkpoint_slug) VALUES ($1, $2, $3)',
-      [user.id, session.id, checkpointSlug]
-    )
-
     const totalCheckpoints = await query('SELECT COUNT(*) as count FROM checkpoints WHERE is_active = true')
     const completedCheckpoints = await query(
       'SELECT COUNT(*) as count FROM checkpoint_completions WHERE user_id = $1',
