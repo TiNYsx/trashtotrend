@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation"
 import { getMany } from "@/lib/db"
 import { requireStaff } from "@/lib/auth"
 import { ScannerClient } from "@/components/staff/scanner-client"
@@ -10,7 +11,12 @@ type Checkpoint = {
 }
 
 export default async function ScanPage() {
-  await requireStaff()
+  const session = await requireStaff()
+  
+  if (!session) {
+    redirect("/staff/login")
+  }
+  
   let checkpoints: Checkpoint[] = []
 
   try {

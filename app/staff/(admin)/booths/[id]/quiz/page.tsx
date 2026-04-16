@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation"
 import { getMany, getOne } from "@/lib/db"
 import { requireStaff } from "@/lib/auth"
 import { QuizManager } from "@/components/staff/quiz-manager"
@@ -22,7 +23,12 @@ type Booth = {
 }
 
 export default async function QuizPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireStaff()
+  const session = await requireStaff()
+  
+  if (!session) {
+    redirect("/staff/login")
+  }
+  
   const { id } = await params
   const boothId = parseInt(id)
 

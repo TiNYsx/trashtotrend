@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation"
 import { getMany } from "@/lib/db"
+import { requireStaff } from "@/lib/auth"
 import { BoothsManager } from "@/components/staff/booths-manager"
 
 type Booth = {
@@ -13,6 +15,12 @@ type Booth = {
 }
 
 export default async function BoothsPage() {
+  const session = await requireStaff()
+  
+  if (!session) {
+    redirect("/staff/login")
+  }
+  
   let booths: Booth[] = []
   try {
     booths = await getMany<Booth>("SELECT * FROM booths ORDER BY display_order ASC")

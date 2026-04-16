@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation"
 import { getMany } from "@/lib/db"
 import { requireStaff } from "@/lib/auth"
 import { RegistrationManager } from "@/components/staff/registration-manager"
@@ -15,7 +16,12 @@ type Field = {
 }
 
 export default async function RegistrationPage() {
-  await requireStaff()
+  const session = await requireStaff()
+  
+  if (!session) {
+    redirect("/staff/login")
+  }
+  
   let fields: Field[] = []
   try {
     fields = await getMany<Field>("SELECT * FROM registration_fields ORDER BY display_order ASC")

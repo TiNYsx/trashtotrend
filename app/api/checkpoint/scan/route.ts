@@ -5,10 +5,21 @@ import { requireStaff } from '@/lib/auth'
 export async function POST(request: NextRequest) {
   try {
     const session = await requireStaff()
-    const { qrToken, checkpointSlug } = await request.json()
+    
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
+    let { qrToken, checkpointSlug } = await request.json()
 
     if (!qrToken || !checkpointSlug) {
       return NextResponse.json({ error: 'QR token and checkpoint required' }, { status: 400 })
+    }
+
+    // Extract token from URL path if needed (e.g., /scan/hoop_xxx -> hoop_xxx)
+    const match = qrToken.match(/\/scan\/([^/]+)$/)
+    if (match) {
+      qrToken = match[1]
     }
 
     const userResult = await query(

@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation"
 import { getOne } from "@/lib/db"
+import { requireStaff } from "@/lib/auth"
 import { DashboardStats } from "@/components/staff/dashboard-stats"
 
 type Stats = {
@@ -9,6 +11,12 @@ type Stats = {
 }
 
 export default async function DashboardPage() {
+  const session = await requireStaff()
+  
+  if (!session) {
+    redirect("/staff/login")
+  }
+
   let stats: Stats = {
     total_customers: "0",
     total_stamps: "0",

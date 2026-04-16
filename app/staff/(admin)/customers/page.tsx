@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation"
 import { getMany } from "@/lib/db"
 import { requireStaff } from "@/lib/auth"
 import { CustomersTable } from "@/components/staff/customers-table"
@@ -12,7 +13,12 @@ type Customer = {
 }
 
 export default async function CustomersPage() {
-  await requireStaff()
+  const session = await requireStaff()
+  
+  if (!session) {
+    redirect("/staff/login")
+  }
+  
   let customers: Customer[] = []
 
   try {

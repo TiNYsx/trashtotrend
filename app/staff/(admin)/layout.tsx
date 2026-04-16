@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation"
 import { requireStaff } from "@/lib/auth"
 import { StaffSidebar } from "@/components/staff/staff-sidebar"
 
@@ -7,6 +8,10 @@ export default async function StaffAdminLayout({
   children: React.ReactNode
 }) {
   const session = await requireStaff()
+
+  if (!session) {
+    redirect("/staff/login")
+  }
 
   return (
     <div className="flex min-h-dvh bg-background">
