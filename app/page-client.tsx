@@ -84,19 +84,16 @@ export default function HomeClient() {
       <div className="relative z-10 flex min-h-dvh flex-col">
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-5">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative w-12 h-12">
+          <Link href="/" className="group">
+            <div className="relative w-14 h-14">
               <Image
                 src="/images/Hoop 1.png"
                 alt="HOOP"
-                width={48}
-                height={48}
+                width={56}
+                height={56}
                 className="object-contain transition-transform group-hover:scale-105"
               />
             </div>
-            <span className="font-display text-2xl font-bold tracking-tight chrome-text">
-              HOOP
-            </span>
           </Link>
           <div className="flex items-center gap-5">
             <LanguageToggle />
@@ -120,31 +117,21 @@ export default function HomeClient() {
           <div className="text-center max-w-lg mx-auto space-y-10">
             {/* Hoop Logo Image */}
             <div className="relative mx-auto animate-fade-in-up" style={{ animationDelay: '0s' }}>
-              <div className="relative w-48 h-48 mx-auto">
+              <div className="relative w-72 h-72 mx-auto">
                 <Image
                   src="/images/Hoop main.png"
                   alt="HOOP"
-                  width={192}
-                  height={192}
+                  width={288}
+                  height={288}
                   className="object-contain drop-shadow-2xl"
                   priority
                 />
               </div>
               {/* Glow effect behind logo */}
-              <div className="absolute inset-0 -z-10 mx-auto w-64 h-64 rounded-full" style={{
+              <div className="absolute inset-0 -z-10 mx-auto w-96 h-96 rounded-full" style={{
                 background: 'radial-gradient(circle, rgba(192, 192, 192, 0.2) 0%, transparent 70%)',
                 filter: 'blur(40px)'
               }} />
-            </div>
-
-            {/* Title with Chrome Effect */}
-            <div className="space-y-3 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-              <h1 className="font-display text-6xl md:text-7xl font-bold tracking-tight chrome-text">
-                HOOP
-              </h1>
-              <p className="font-display text-lg md:text-xl font-medium chrome-text-subtle">
-                {lang === 'th' ? t.taglineTh : t.tagline}
-              </p>
             </div>
 
             {/* Description */}

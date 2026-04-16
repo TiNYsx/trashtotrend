@@ -69,17 +69,16 @@ export default function LoginPage() {
       <div className="relative z-10 flex min-h-dvh flex-col px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-12">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative w-10 h-10">
+          <Link href="/" className="group">
+            <div className="relative w-12 h-12">
               <Image
                 src="/images/Hoop 1.png"
                 alt="HOOP"
-                width={40}
-                height={40}
+                width={48}
+                height={48}
                 className="object-contain"
               />
             </div>
-            <span className="font-display text-xl font-bold chrome-text">HOOP</span>
           </Link>
           <div className="flex items-center gap-4">
             <LanguageToggle />
