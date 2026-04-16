@@ -5,17 +5,20 @@ import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, age, gender, contact, email, surveyAnswers } = await request.json()
+    const { name, age, gender, contact, email, password, surveyAnswers } = await request.json()
 
-    if (!name || !age || !gender || !contact || !email) {
+    if (!name || !age || !gender || !contact || !email || !password) {
       return NextResponse.json({ error: 'All fields are required' }, { status: 400 })
+    }
+
+    if (password.length < 6) {
+      return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
     }
 
     if (surveyAnswers.length !== 8) {
       return NextResponse.json({ error: 'Survey must be completed' }, { status: 400 })
     }
 
-    const password = Math.random().toString(36).slice(-8)
     const passwordHash = await bcrypt.hash(password, 10)
     const qrToken = generateQRToken()
 

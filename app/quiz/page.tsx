@@ -108,17 +108,26 @@ export default function QuizPage() {
 
   const fetchQuestions = async () => {
     try {
-      const res = await fetch('/api/quiz')
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 3000)
+      
+      const res = await fetch('/api/quiz', { signal: controller.signal })
+      clearTimeout(timeoutId)
+      
+      if (!res.ok) throw new Error('API error')
+      
       const data = await res.json()
-      if (data && data.length > 0) {
-        setQuestions(data)
+      const validQuestions = data.filter((q: QuizQuestion) => q.options && q.options.length > 0)
+      
+      if (validQuestions.length >= 3) {
+        setQuestions(validQuestions)
       } else {
         setQuestions(FALLBACK_QUESTIONS)
       }
-      setIsLoading(false)
     } catch (error) {
       console.error('Failed to fetch questions:', error)
       setQuestions(FALLBACK_QUESTIONS)
+    } finally {
       setIsLoading(false)
     }
   }

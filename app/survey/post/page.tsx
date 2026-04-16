@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, CheckCircle, Trophy, Loader2 } from 'lucide-react'
+import { ArrowLeft, CheckCircle, Trophy, Loader2, Lock } from 'lucide-react'
 import { LanguageToggle } from '@/components/language-toggle'
 import { useLanguage } from '@/components/providers'
 
@@ -25,6 +25,25 @@ export default function PostSurveyPage() {
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
+  const [isLocked, setIsLocked] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    checkAccess()
+  }, [])
+
+  const checkAccess = async () => {
+    try {
+      const res = await fetch('/api/user/dashboard')
+      const data = await res.json()
+      if (data.checkpoint_count >= data.total_checkpoints) {
+        setIsLocked(false)
+      }
+    } catch (err) {
+      console.error('Failed to check access:', err)
+    }
+    setIsLoading(false)
+  }
 
   const handleAnswer = (score: number) => {
     const newAnswers = { ...answers, [currentQ]: score }
@@ -122,6 +141,58 @@ export default function PostSurveyPage() {
   }
 
   const progress = ((currentQ + 1) / SURVEY_QUESTIONS.length) * 100
+
+  if (isLoading) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center gradient-bg">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-10 w-10 text-accent animate-spin mx-auto" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </main>
+    )
+  }
+
+  if (isLocked) {
+    return (
+      <main className="relative min-h-dvh gradient-bg">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-64 w-64 rounded-full bg-accent/10 blur-[80px]" />
+        </div>
+        <div className="relative z-10 flex min-h-dvh flex-col items-center justify-center px-6 py-8">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 200 }}
+            className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-secondary mb-6"
+          >
+            <Lock className="h-12 w-12 text-muted-foreground" />
+          </motion.div>
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="font-display text-3xl font-bold text-center mb-2"
+          >
+            {lang === 'th' ? 'ถูกล็อก' : 'Locked'}
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-muted-foreground text-center mb-8"
+          >
+            {lang === 'th' ? 'กรุณารวบรวมแสตมป์ครบทุกด่านก่อนทำแบบสำรวจ' : 'Complete all checkpoints to unlock this survey'}
+          </motion.p>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="h-12 px-8 rounded-xl bg-accent text-accent-foreground font-semibold"
+          >
+            {lang === 'th' ? 'กลับสู่แดชบอร์ด' : 'Return to Dashboard'}
+          </button>
+        </div>
+      </main>
+    )
+  }
 
   return (
     <main className="relative min-h-dvh gradient-bg">

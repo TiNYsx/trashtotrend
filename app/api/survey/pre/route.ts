@@ -5,6 +5,11 @@ import { requireUser } from '@/lib/auth'
 export async function POST(request: NextRequest) {
   try {
     const session = await requireUser()
+    
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
     const { answers } = await request.json()
 
     if (!answers || Object.keys(answers).length !== 8) {

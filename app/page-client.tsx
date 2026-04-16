@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { LanguageToggle } from "@/components/language-toggle"
+import { useLanguage } from "@/components/providers"
 import { 
   ArrowRight, 
   QrCode, 
@@ -14,6 +15,7 @@ import {
 } from "lucide-react"
 
 export default function HomeClient() {
+  const { lang } = useLanguage()
   return (
     <main className="relative min-h-dvh overflow-hidden">
       {/* Animated Background */}
@@ -61,6 +63,12 @@ export default function HomeClient() {
           <div className="flex items-center gap-4">
             <LanguageToggle />
             <Link
+              href="/login"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Login
+            </Link>
+            <Link
               href="/staff/login"
               className="text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
@@ -72,27 +80,21 @@ export default function HomeClient() {
         {/* Hero Section */}
         <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
           <div className="text-center max-w-lg mx-auto space-y-8">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass animate-fade-in">
-              <Sparkles className="h-4 w-4 text-accent" />
-              <span className="text-sm font-medium">Creative Exhibition</span>
-            </div>
-
             {/* Title */}
             <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-              <h1 className="font-display text-5xl md:text-6xl font-bold tracking-tight">
-                <span className="text-foreground">From </span>
-                <span className="text-primary text-glow">Trash</span>
+              <h1 className="font-display text-7xl md:text-8xl font-bold tracking-tight text-primary text-glow">
+                Hoop
               </h1>
-              <p className="font-display text-4xl md:text-5xl font-bold italic text-accent text-glow-accent">
-                to Trend
+              <p className="font-display text-xl md:text-2xl font-medium text-muted-foreground">
+                From Trash to Trend
               </p>
             </div>
 
             {/* Description */}
             <p className="text-muted-foreground text-lg leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-              Experience the transformation of aluminium from waste to worth. 
-              Join our circular economy journey and discover how trash becomes treasure.
+              {lang === 'th' 
+                ? 'สัมผัสการเปลี่ยนแปลงของอะลูมิเนียมจากของเสียสู่คุณค่า เข้าร่วมการเดินทางสู่เศรษฐกิจหมุนเวียนและค้นพบว่าขยะกลายเป็นสมบัติได้อย่างไร'
+                : 'Experience the transformation of aluminium from waste to worth. Join our circular economy journey and discover how trash becomes treasure.'}
             </p>
 
             {/* CTA Buttons */}

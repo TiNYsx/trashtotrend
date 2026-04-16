@@ -13,6 +13,7 @@ interface FormData {
   gender: string
   contact: string
   email: string
+  password: string
 }
 
 interface SurveyAnswer {
@@ -20,16 +21,28 @@ interface SurveyAnswer {
   score: number
 }
 
-const SURVEY_QUESTIONS = [
-  'I am aware of the environmental impact of aluminium waste.',
-  'I understand the concept of circular economy.',
-  'I regularly recycle aluminium products.',
-  'I believe individual actions can make a difference for the environment.',
-  'I am interested in learning more about sustainable practices.',
-  'I would be willing to pay more for eco-friendly products.',
-  'I have participated in environmental activities before.',
-  'I believe businesses should be responsible for recycling their products.'
-]
+const SURVEY_QUESTIONS = {
+  en: [
+    'I am aware of the environmental impact of aluminium waste.',
+    'I understand the concept of circular economy.',
+    'I regularly recycle aluminium products.',
+    'I believe individual actions can make a difference for the environment.',
+    'I am interested in learning more about sustainable practices.',
+    'I would be willing to pay more for eco-friendly products.',
+    'I have participated in environmental activities before.',
+    'I believe businesses should be responsible for recycling their products.'
+  ],
+  th: [
+    'ฉันตระหนักถึงผลกระทบต่อสิ่งแวดล้อมของของเสียอะลูมิเนียม',
+    'ฉันเข้าใจแนวคิดเศรษฐกิจหมุนเวียน',
+    'ฉันสม่ำเสมอในการรีไซเคิลผลิตภัณฑ์อะลูมิเนียม',
+    'ฉันเชื่อว่าการกระทำของปัจเจกบุคคลสามารถสร้างความแตกต่างต่อสิ่งแวดล้อมได้',
+    'ฉันสนใจที่จะเรียนรู้เพิ่มเติมเกี่ยวกับแนวปฏิบัติที่ยั่งยืน',
+    'ฉันยินดีที่จะจ่ายมากขึ้นสำหรับผลิตภัณฑ์ที่เป็นมิตรต่อสิ่งแวดล้อม',
+    'ฉันเคยเข้าร่วมกิจกรรมด้านสิ่งแวดล้อมมาก่อน',
+    'ฉันเชื่อว่าธุรกิจควรรับผิดชอบในการรีไซเคิลผลิตภัณฑ์ของตน'
+  ]
+}
 
 const GENDER_OPTIONS = [
   { value: 'male', label_en: 'Male', label_th: 'ชาย' },
@@ -40,7 +53,7 @@ const GENDER_OPTIONS = [
 
 export default function EventRegisterPage() {
   const router = useRouter()
-  const { lang, t } = useLanguage()
+  const { lang } = useLanguage()
   const [step, setStep] = useState<'form' | 'survey' | 'success'>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('registrationStep')
@@ -53,12 +66,44 @@ export default function EventRegisterPage() {
     age: '',
     gender: '',
     contact: '',
-    email: ''
+    email: '',
+    password: ''
   })
   const [surveyAnswers, setSurveyAnswers] = useState<SurveyAnswer[]>([])
   const [currentSurveyQ, setCurrentSurveyQ] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  const t = {
+    back: lang === 'th' ? 'กลับ' : 'Back',
+    eventReg: lang === 'th' ? 'ลงทะเบียนงาน' : 'Event Registration',
+    bringCan: lang === 'th' ? 'นำกระป๋องอะลูมิเนียมของคุณมาเช็คอิน' : 'Bring your aluminium can to check in',
+    name: lang === 'th' ? 'ชื่อ' : 'Name',
+    yourName: lang === 'th' ? 'ชื่อของคุณ' : 'Your name',
+    age: lang === 'th' ? 'อายุ' : 'Age',
+    yourAge: lang === 'th' ? 'อายุ' : 'Age',
+    gender: lang === 'th' ? 'เพศ' : 'Gender',
+    select: lang === 'th' ? 'เลือก' : 'Select',
+    contact: lang === 'th' ? 'ติดต่อ' : 'Contact',
+    phoneLine: lang === 'th' ? 'โทรหรือไลน์ไอดี' : 'Phone or Line ID',
+    email: lang === 'th' ? 'อีเมล' : 'Email',
+    yourEmail: lang === 'th' ? 'อีเมลของคุณ' : 'your@email.com',
+    password: lang === 'th' ? 'รหัสผ่าน' : 'Password',
+    yourPassword: lang === 'th' ? 'รหัสผ่านของคุณ' : 'Your password',
+    continueSurvey: lang === 'th' ? 'ดำเนินการต่อไปยังแบบสำรวจ' : 'Continue to Survey',
+    preSurvey: lang === 'th' ? 'แบบสำรวจก่อนงาน' : 'Pre-Event Survey',
+    question: lang === 'th' ? 'คำถาม' : 'Question',
+    of: lang === 'th' ? 'จาก' : 'of',
+    stronglyDisagree: lang === 'th' ? 'ไม่เห็นด้วยอย่างยิ่ง' : 'Strongly Disagree',
+    stronglyAgree: lang === 'th' ? 'เห็นด้วยอย่างยิ่ง' : 'Strongly Agree',
+    regComplete: lang === 'th' ? 'ลงทะเบียนสำเร็จแล้ว!' : 'Registration Complete!',
+    qrReady: lang === 'th' ? 'คิวอาร์โค้ดของคุณพร้อมแล้ว เริ่มต้นการเดินทางของคุณ!' : 'Your QR code is ready. Start your journey!',
+    goDashboard: lang === 'th' ? 'ไปที่แดชบอร์ด' : 'Go to Dashboard',
+    regFailed: lang === 'th' ? 'การลงทะเบียนล้มเหลว' : 'Registration failed',
+    somethingWrong: lang === 'th' ? 'เกิดข้อผิดพลาด กรุณาลองอีกครั้ง' : 'Something went wrong. Please try again.',
+  }
+
+  const questions = lang === 'th' ? SURVEY_QUESTIONS.th : SURVEY_QUESTIONS.en
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -70,10 +115,10 @@ export default function EventRegisterPage() {
     newAnswers.push({ questionNum: currentSurveyQ + 1, score })
     setSurveyAnswers(newAnswers)
 
-    if (currentSurveyQ < SURVEY_QUESTIONS.length - 1) {
+    if (currentSurveyQ < questions.length - 1) {
       setCurrentSurveyQ(currentSurveyQ + 1)
     } else {
-      submitRegistration([...newAnswers, { questionNum: currentSurveyQ + 1, score }])
+      submitRegistration(newAnswers)
     }
   }
 
@@ -92,10 +137,10 @@ export default function EventRegisterPage() {
         setStep('success')
       } else {
         const data = await res.json()
-        setError(data.error || 'Registration failed')
+        setError(data.error || t.regFailed)
       }
     } catch (err) {
-      setError('Something went wrong. Please try again.')
+      setError(t.somethingWrong)
     }
     setIsSubmitting(false)
   }
@@ -136,7 +181,7 @@ export default function EventRegisterPage() {
             transition={{ delay: 0.2 }}
             className="font-display text-3xl font-bold text-center mb-2"
           >
-            Registration Complete!
+            {t.regComplete}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -144,7 +189,7 @@ export default function EventRegisterPage() {
             transition={{ delay: 0.3 }}
             className="text-muted-foreground text-center mb-8"
           >
-            Your QR code is ready. Start your journey!
+            {t.qrReady}
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -155,7 +200,7 @@ export default function EventRegisterPage() {
               onClick={() => router.push('/dashboard')}
               className="group flex h-14 items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground font-semibold px-8 transition-all hover:scale-[1.02] glow-primary"
             >
-              <span>Go to Dashboard</span>
+              <span>{t.goDashboard}</span>
               <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
             </button>
           </motion.div>
@@ -166,21 +211,19 @@ export default function EventRegisterPage() {
 
   return (
     <main className="relative min-h-dvh gradient-bg">
-      {/* Background effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 h-64 w-64 rounded-full bg-primary/20 blur-[100px] animate-pulse-slow" />
         <div className="absolute bottom-1/4 right-1/4 h-48 w-48 rounded-full bg-accent/20 blur-[80px] animate-pulse-slow" style={{ animationDelay: '-2s' }} />
       </div>
 
       <div className="relative z-10 flex min-h-dvh flex-col px-6 py-8">
-        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <button
             onClick={goBack}
             className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-5 w-5" />
-            <span className="text-sm">Back</span>
+            <span className="text-sm">{t.back}</span>
           </button>
           <div className="flex items-center gap-4">
             <LanguageToggle />
@@ -191,7 +234,6 @@ export default function EventRegisterPage() {
           </div>
         </div>
 
-        {/* Step indicator */}
         <div className="flex items-center justify-center gap-2 mb-8">
           <div className={`w-3 h-3 rounded-full ${step === 'form' ? 'bg-primary' : 'bg-primary/50'}`} />
           <div className="w-8 h-0.5 bg-border" />
@@ -205,10 +247,8 @@ export default function EventRegisterPage() {
               animate={{ opacity: 1, y: 0 }}
               className="text-center mb-8"
             >
-              <h1 className="font-display text-3xl font-bold mb-2">Event Registration</h1>
-              <p className="text-muted-foreground">
-                Bring your aluminium can to check in
-              </p>
+              <h1 className="font-display text-3xl font-bold mb-2">{t.eventReg}</h1>
+              <p className="text-muted-foreground">{t.bringCan}</p>
             </motion.div>
 
             <motion.form
@@ -219,38 +259,38 @@ export default function EventRegisterPage() {
               className="w-full space-y-4"
             >
               <div className="space-y-2">
-                <label className="text-sm font-medium">Name *</label>
+                <label className="text-sm font-medium">{t.name} *</label>
                 <input
                   type="text"
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full h-12 px-4 rounded-xl bg-secondary/50 border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                  placeholder="Your name"
+                  placeholder={t.yourName}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Age *</label>
+                  <label className="text-sm font-medium">{t.age} *</label>
                   <input
                     type="text"
                     required
                     value={formData.age}
                     onChange={(e) => setFormData({ ...formData, age: e.target.value })}
                     className="w-full h-12 px-4 rounded-xl bg-secondary/50 border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                    placeholder="Age"
+                    placeholder={t.yourAge}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Gender *</label>
+                  <label className="text-sm font-medium">{t.gender} *</label>
                   <select
                     required
                     value={formData.gender}
                     onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                     className="w-full h-12 px-4 rounded-xl bg-secondary/50 border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                   >
-                    <option value="">Select</option>
+                    <option value="">{t.select}</option>
                     {GENDER_OPTIONS.map(opt => (
                       <option key={opt.value} value={opt.value}>
                         {lang === 'th' ? opt.label_th : opt.label_en}
@@ -261,26 +301,39 @@ export default function EventRegisterPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Contact *</label>
+                <label className="text-sm font-medium">{t.contact} *</label>
                 <input
                   type="text"
                   required
                   value={formData.contact}
                   onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
                   className="w-full h-12 px-4 rounded-xl bg-secondary/50 border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                  placeholder="Phone or Line ID"
+                  placeholder={t.phoneLine}
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Email *</label>
+                <label className="text-sm font-medium">{t.email} *</label>
                 <input
                   type="email"
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full h-12 px-4 rounded-xl bg-secondary/50 border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                  placeholder="your@email.com"
+                  placeholder={t.yourEmail}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t.password} *</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full h-12 px-4 rounded-xl bg-secondary/50 border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                  placeholder={t.yourPassword}
                 />
               </div>
 
@@ -290,7 +343,7 @@ export default function EventRegisterPage() {
                 type="submit"
                 className="group w-full h-14 flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground font-semibold transition-all hover:scale-[1.02] mt-6"
               >
-                <span>Continue to Survey</span>
+                <span>{t.continueSurvey}</span>
                 <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
               </button>
             </motion.form>
@@ -302,19 +355,18 @@ export default function EventRegisterPage() {
               animate={{ opacity: 1, y: 0 }}
               className="text-center mb-8"
             >
-              <h1 className="font-display text-2xl font-bold mb-2">Pre-Event Survey</h1>
+              <h1 className="font-display text-2xl font-bold mb-2">{t.preSurvey}</h1>
               <p className="text-muted-foreground text-sm">
-                Question {currentSurveyQ + 1} of {SURVEY_QUESTIONS.length}
+                {t.question} {currentSurveyQ + 1} {t.of} {questions.length}
               </p>
             </motion.div>
 
-            {/* Progress */}
             <div className="w-full mb-8">
               <div className="h-2 rounded-full bg-secondary overflow-hidden">
                 <motion.div
                   className="h-full rounded-full bg-primary"
                   initial={{ width: 0 }}
-                  animate={{ width: `${((currentSurveyQ + 1) / SURVEY_QUESTIONS.length) * 100}%` }}
+                  animate={{ width: `${((currentSurveyQ + 1) / questions.length) * 100}%` }}
                   transition={{ duration: 0.3 }}
                 />
               </div>
@@ -328,11 +380,10 @@ export default function EventRegisterPage() {
               className="w-full text-center mb-8"
             >
               <p className="text-lg font-medium leading-relaxed">
-                {SURVEY_QUESTIONS[currentSurveyQ]}
+                {questions[currentSurveyQ]}
               </p>
             </motion.div>
 
-            {/* Scale buttons */}
             <div className="w-full grid grid-cols-5 gap-2">
               {[1, 2, 3, 4, 5].map((score) => (
                 <button
@@ -346,8 +397,8 @@ export default function EventRegisterPage() {
               ))}
             </div>
             <div className="w-full flex justify-between text-xs text-muted-foreground mt-2 px-2">
-              <span>Strongly Disagree</span>
-              <span>Strongly Agree</span>
+              <span>{t.stronglyDisagree}</span>
+              <span>{t.stronglyAgree}</span>
             </div>
 
             {isSubmitting && (

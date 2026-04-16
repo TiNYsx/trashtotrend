@@ -48,26 +48,26 @@ export async function getSession(): Promise<SessionPayload | null> {
   }
 }
 
-export async function requireCustomer(): Promise<SessionPayload> {
+export async function requireCustomer(): Promise<SessionPayload | null> {
   const session = await getSession()
   if (!session || session.role === "staff" || session.role === "admin") {
-    redirect("/login")
+    return null
   }
   return session
 }
 
-export async function requireUser(): Promise<SessionPayload> {
+export async function requireUser(): Promise<SessionPayload | null> {
   const session = await getSession()
   if (!session || session.role === "staff" || session.role === "admin") {
-    redirect("/login")
+    return null
   }
   return session
 }
 
-export async function requireStaff(): Promise<SessionPayload> {
+export async function requireStaff(): Promise<SessionPayload | null> {
   const session = await getSession()
   if (!session || (session.role !== "staff" && session.role !== "admin")) {
-    redirect("/staff/login")
+    return null
   }
   return session
 }

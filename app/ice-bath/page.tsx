@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight, ArrowLeft, Snowflake, Users, Calendar, AlertCircle, CheckCircle } from 'lucide-react'
 import { LanguageToggle } from '@/components/language-toggle'
+import { useLanguage } from '@/components/providers'
 
 interface EventSettings {
   ice_bath_capacity: string
@@ -11,6 +12,7 @@ interface EventSettings {
 }
 
 export default function IceBathPage() {
+  const { lang } = useLanguage()
   const [settings, setSettings] = useState<EventSettings | null>(null)
   const [currentCount, setCurrentCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
@@ -18,6 +20,28 @@ export default function IceBathPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [status, setStatus] = useState<'closed' | 'open' | 'full' | 'success'>('closed')
   const [error, setError] = useState('')
+
+  const t = {
+    back: lang === 'th' ? 'กลับ' : 'Back',
+    loading: lang === 'th' ? 'กำลังโหลด...' : 'Loading...',
+    iceBath: lang === 'th' ? 'ประสบการณ์อาบน้ำแข็ง' : 'Ice Bath Experience',
+    iceBathDesc: lang === 'th' ? 'ท้าทายตัวเองกับประสบการณ์จุ่มน้ำแข็งพิเศษ' : 'Challenge yourself with our exclusive arctic immersion',
+    availableSpots: lang === 'th' ? 'ที่ว่าง' : 'Available Spots',
+    registrationOpens: lang === 'th' ? 'เปิดให้ลงทะเบียนเร็วๆ นี้' : 'Registration Opens Soon',
+    opensOn: lang === 'th' ? 'การลงทะเบียนอาบน้ำแข็งเปิดวันที่' : 'Ice Bath registration opens on',
+    fullyBooked: lang === 'th' ? 'เต็มแล้ว' : 'Fully Booked',
+    allClaimed: lang === 'th' ? 'ที่นั่งถูกจองหมดแล้ว ตรวจสอบการยกเลิกได้' : 'All spots have been claimed. Check back for cancellations.',
+    registrationComplete: lang === 'th' ? 'ลงทะเบียนสำเร็จ!' : 'Registration Complete!',
+    registered: lang === 'th' ? 'คุณลงทะเบียนอาบน้ำแข็งแล้ว แล้วเจอกัน!' : "You're registered for the Ice Bath experience. See you there!",
+    name: lang === 'th' ? 'ชื่อ' : 'Name',
+    yourName: lang === 'th' ? 'ชื่อของคุณ' : 'Your name',
+    contact: lang === 'th' ? 'ติดต่อ (โทร/ไลน์)' : 'Contact (Phone/Line)',
+    phoneOrLine: lang === 'th' ? 'เบอร์โทรหรือไลน์ไอดี' : 'Phone number or Line ID',
+    reserveSpot: lang === 'th' ? 'จองที่นั่งของคุณ' : 'Reserve Your Spot',
+    registering: lang === 'th' ? 'กำลังลงทะเบียน...' : 'Registering...',
+    registrationFailed: lang === 'th' ? 'การลงทะเบียนล้มเหลว' : 'Registration failed',
+    somethingWrong: lang === 'th' ? 'เกิดข้อผิดพลาด กรุณาลองอีกครั้ง' : 'Something went wrong. Please try again.',
+  }
 
   useEffect(() => {
     fetchSettings()
@@ -69,10 +93,10 @@ export default function IceBathPage() {
         setCurrentCount(prev => prev + 1)
       } else {
         const data = await res.json()
-        setError(data.error || 'Registration failed')
+        setError(data.error || t.registrationFailed)
       }
     } catch (err) {
-      setError('Something went wrong. Please try again.')
+      setError(t.somethingWrong)
     }
     setIsSubmitting(false)
   }
@@ -82,7 +106,7 @@ export default function IceBathPage() {
       <main className="flex min-h-dvh items-center justify-center gradient-bg">
         <div className="text-center space-y-4">
           <Snowflake className="h-10 w-10 text-primary animate-spin mx-auto" />
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">{t.loading}</p>
         </div>
       </main>
     )
@@ -94,7 +118,6 @@ export default function IceBathPage() {
 
   return (
     <main className="relative min-h-dvh gradient-bg">
-      {/* Background effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
           className="absolute top-1/4 left-1/4 h-64 w-64 rounded-full bg-accent/20 blur-[100px]"
@@ -109,14 +132,13 @@ export default function IceBathPage() {
       </div>
 
         <div className="relative z-10 flex min-h-dvh flex-col px-6 py-8">
-        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <button
             onClick={() => window.history.back()}
             className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-5 w-5" />
-            <span className="text-sm">Back</span>
+            <span className="text-sm">{t.back}</span>
           </button>
           <div className="flex items-center gap-4">
             <LanguageToggle />
@@ -128,7 +150,6 @@ export default function IceBathPage() {
         </div>
 
         <div className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto w-full">
-          {/* Title */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -143,26 +164,24 @@ export default function IceBathPage() {
               <Snowflake className="h-10 w-10 text-accent animate-glow-pulse" />
             </motion.div>
             <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">
-              Ice Bath Experience
+              {t.iceBath}
             </h1>
             <p className="text-muted-foreground">
-              Challenge yourself with our exclusive arctic immersion
+              {t.iceBathDesc}
             </p>
           </motion.div>
 
-          {/* Status Cards */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             className="w-full space-y-4"
           >
-            {/* Availability */}
             <div className="glass rounded-2xl p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Users className="h-5 w-5" />
-                  <span className="text-sm">Available Spots</span>
+                  <span className="text-sm">{t.availableSpots}</span>
                 </div>
                 <span className="font-display text-2xl font-bold text-primary">
                   {spotsLeft} / {capacity}
@@ -178,7 +197,6 @@ export default function IceBathPage() {
               </div>
             </div>
 
-            {/* Status Message */}
             {status === 'closed' && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -188,9 +206,9 @@ export default function IceBathPage() {
                 <div className="flex items-start gap-4">
                   <Calendar className="h-6 w-6 text-accent flex-shrink-0 mt-1" />
                   <div>
-                    <h3 className="font-semibold mb-1">Registration Opens Soon</h3>
+                    <h3 className="font-semibold mb-1">{t.registrationOpens}</h3>
                     <p className="text-sm text-muted-foreground">
-                      Ice Bath registration opens on {openDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                      {t.opensOn} {openDate.toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                     </p>
                   </div>
                 </div>
@@ -206,10 +224,8 @@ export default function IceBathPage() {
                 <div className="flex items-start gap-4">
                   <AlertCircle className="h-6 w-6 text-destructive flex-shrink-0 mt-1" />
                   <div>
-                    <h3 className="font-semibold mb-1">Fully Booked</h3>
-                    <p className="text-sm text-muted-foreground">
-                      All spots have been claimed. Check back for cancellations.
-                    </p>
+                    <h3 className="font-semibold mb-1">{t.fullyBooked}</h3>
+                    <p className="text-sm text-muted-foreground">{t.allClaimed}</p>
                   </div>
                 </div>
               </motion.div>
@@ -224,16 +240,13 @@ export default function IceBathPage() {
                 <div className="flex items-start gap-4">
                   <CheckCircle className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
                   <div>
-                    <h3 className="font-semibold mb-1 text-primary">Registration Complete!</h3>
-                    <p className="text-sm text-muted-foreground">
-                      You're registered for the Ice Bath experience. See you there!
-                    </p>
+                    <h3 className="font-semibold mb-1 text-primary">{t.registrationComplete}</h3>
+                    <p className="text-sm text-muted-foreground">{t.registered}</p>
                   </div>
                 </div>
               </motion.div>
             )}
 
-            {/* Registration Form */}
             {status === 'open' && (
               <motion.form
                 initial={{ opacity: 0, y: 20 }}
@@ -243,25 +256,25 @@ export default function IceBathPage() {
                 className="glass rounded-2xl p-6 space-y-4"
               >
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Name</label>
+                  <label className="text-sm font-medium">{t.name}</label>
                   <input
                     type="text"
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full h-12 px-4 rounded-xl bg-secondary/50 border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                    placeholder="Your name"
+                    placeholder={t.yourName}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Contact (Phone/Line)</label>
+                  <label className="text-sm font-medium">{t.contact}</label>
                   <input
                     type="text"
                     required
                     value={formData.contact}
                     onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
                     className="w-full h-12 px-4 rounded-xl bg-secondary/50 border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                    placeholder="Phone number or Line ID"
+                    placeholder={t.phoneOrLine}
                   />
                 </div>
                 
@@ -275,10 +288,10 @@ export default function IceBathPage() {
                   className="group w-full h-14 flex items-center justify-center gap-2 rounded-xl bg-accent text-accent-foreground font-semibold transition-all hover:scale-[1.02] disabled:opacity-50"
                 >
                   {isSubmitting ? (
-                    'Registering...'
+                    t.registering
                   ) : (
                     <>
-                      <span>Reserve Your Spot</span>
+                      <span>{t.reserveSpot}</span>
                       <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                     </>
                   )}

@@ -6,6 +6,10 @@ export async function GET() {
   try {
     const session = await requireCustomer()
     
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
     const userResult = await query(
       `SELECT name, email, qr_token, quiz_type, pre_survey_completed, post_survey_completed, reward_claimed 
        FROM users WHERE id = $1`,
