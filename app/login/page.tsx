@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { ArrowRight, Loader2, Recycle } from 'lucide-react'
+import { LanguageToggle } from '@/components/language-toggle'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -55,12 +56,15 @@ export default function LoginPage() {
             <Recycle className="h-6 w-6 text-primary" />
             <span className="font-display font-bold">HOOP</span>
           </Link>
-          <Link
-            href="/staff/login"
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            Staff Login
-          </Link>
+          <div className="flex items-center gap-4">
+            <LanguageToggle />
+            <Link
+              href="/staff/login"
+              className="text-sm text-muted-foreground hover:text-foreground"
+            >
+              Staff Login
+            </Link>
+          </div>
         </div>
 
         <div className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto w-full">

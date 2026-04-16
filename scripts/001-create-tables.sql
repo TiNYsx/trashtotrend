@@ -150,7 +150,17 @@ INSERT INTO event_settings (key, value) VALUES
   ('ice_bath_capacity', '50'),
   ('ice_bath_open_date', '2026-04-20'),
   ('event_date', '2026-04-25'),
-  ('quiz_enabled', 'true')
+  ('quiz_enabled', 'true'),
+  ('home_title_en', 'HOOP Creative Exhibition'),
+  ('home_title_th', 'นิทรรศการ HOOP'),
+  ('home_tagline_en', 'From Trash to Trend'),
+  ('home_tagline_th', 'จากขยะสู่แฟชั่น'),
+  ('home_description_en', 'Experience the transformation of aluminium from waste to worth. Join our circular economy journey and discover how trash becomes treasure.'),
+  ('home_description_th', 'สัมผัสการเปลี่ยนแปลงของอะลูมิเนียมจากขยะสู่คุณค่า ร่วมเดินทางสู่เศรษฐกิจหมุนเวียนและค้นพบว่าขยะกลายเป็นสมบัติได้อย่างไร'),
+  ('about_mission_en', 'HOOP is a creative exhibition exploring the transformation of aluminium from waste to worth. We believe that what society discards can become something valuable through innovation, creativity, and conscious consumption.'),
+  ('about_mission_th', 'HOOP คือนิทรรศการสร้างสรรค์ที่สำรวจการเปลี่ยนแปลงของอะลูมิเนียมจากขยะสู่คุณค่า เราเชื่อว่าสิ่งที่สังคมทิ้งสามารถกลายเป็นสิ่งมีคุณค่าได้ผ่านนวัตกรรม ความสร้างสรรค์ และการบริโภคอย่างมีสติ'),
+  ('about_circular_en', 'The aluminium loop represents one of the most efficient recycling systems on Earth. Did you know that aluminium can be recycled infinitely without losing quality? Every can you bring becomes part of this endless cycle of renewal.'),
+  ('about_circular_th', 'วงจรอะลูมิเนียมเป็นหนึ่งในระบบรีไซเคิลที่มีประสิทธิภาพมากที่สุดในโลก คุณทราบหรือไม่ว่าอะลูมิเนียมสามารถรีไซเคิลได้ไม่จำกัดโดยไม่สูญเสียคุณภาพ? ทุกกระป๋องที่คุณนำมาจะกลายเป็นส่วนหนึ่งของวงจรการฟื้นฟูที่ไม่มีที่สิ้นสุด')
 ON CONFLICT (key) DO NOTHING;
 
 -- Insert personality quiz questions

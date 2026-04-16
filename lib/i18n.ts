@@ -98,6 +98,7 @@ export const dict = {
   quizCount: { en: "Quizzes", th: "แบบทดสอบ" },
   registeredAt: { en: "Registered", th: "ลงทะเบียนเมื่อ" },
   alreadyStamped: { en: "Already stamped at this booth", th: "ประทับตราที่บูธนี้แล้ว" },
+  settings: { en: "Settings", th: "ตั้งค่า" },
 } as const
 
 export type DictKey = keyof typeof dict

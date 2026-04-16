@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ArrowLeft, CheckCircle, Loader2 } from 'lucide-react'
+import { LanguageToggle } from '@/components/language-toggle'
 
 const SURVEY_QUESTIONS = [
   'I am aware of the environmental impact of aluminium waste.',
@@ -120,9 +121,12 @@ export default function PreSurveyPage() {
             <ArrowLeft className="h-5 w-5" />
             <span className="text-sm">Back</span>
           </button>
-          <span className="text-sm text-muted-foreground">
-            Pre-Survey
-          </span>
+          <div className="flex items-center gap-4">
+            <LanguageToggle />
+            <span className="text-sm text-muted-foreground">
+              Pre-Survey
+            </span>
+          </div>
         </div>
 
         {/* Progress */}

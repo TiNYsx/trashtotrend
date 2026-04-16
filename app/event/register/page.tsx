@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ArrowRight, ArrowLeft, QrCode, Snowflake, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { useLanguage } from '@/components/providers'
+import { LanguageToggle } from '@/components/language-toggle'
 
 interface FormData {
   name: string
@@ -179,9 +180,12 @@ export default function EventRegisterPage() {
             <ArrowLeft className="h-5 w-5" />
             <span className="text-sm">Back</span>
           </button>
-          <div className="flex items-center gap-2">
-            <QrCode className="h-5 w-5 text-primary" />
-            <span className="font-display font-bold">HOOP</span>
+          <div className="flex items-center gap-4">
+            <LanguageToggle />
+            <div className="flex items-center gap-2">
+              <QrCode className="h-5 w-5 text-primary" />
+              <span className="font-display font-bold">HOOP</span>
+            </div>
           </div>
         </div>
 

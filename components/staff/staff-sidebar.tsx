@@ -13,6 +13,7 @@ import {
   FileText,
   Users,
   ClipboardList,
+  Settings,
   LogOut,
   Menu,
   X,
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/staff/booths", icon: Store, labelKey: "booths" as const },
   { href: "/staff/registration", icon: ClipboardList, labelKey: "registrationFields" as const },
   { href: "/staff/customers", icon: Users, labelKey: "customers" as const },
+  { href: "/staff/settings", icon: Settings, labelKey: "settings" as const },
 ]
 
 export function StaffSidebar({ username }: { username: string }) {

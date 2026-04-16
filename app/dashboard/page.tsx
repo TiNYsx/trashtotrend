@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { QrCode, MapPin, Trophy, LogOut, Loader2, CheckCircle, Lock, Sparkles, RefreshCw } from 'lucide-react'
+import { LanguageToggle } from '@/components/language-toggle'
 import QRCode from 'qrcode'
 
 interface Checkpoint {
@@ -112,12 +113,15 @@ export default function DashboardPage() {
               <p className="text-sm text-muted-foreground">{userData.email}</p>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="p-2 rounded-lg hover:bg-secondary transition-colors"
-          >
-            <LogOut className="h-5 w-5 text-muted-foreground" />
-          </button>
+          <div className="flex items-center gap-2">
+            <LanguageToggle />
+            <button
+              onClick={handleLogout}
+              className="p-2 rounded-lg hover:bg-secondary transition-colors"
+            >
+              <LogOut className="h-5 w-5 text-muted-foreground" />
+            </button>
+          </div>
         </div>
 
         {/* QR Code Card */}

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight, ArrowLeft, Snowflake, Users, Calendar, AlertCircle, CheckCircle } from 'lucide-react'
+import { LanguageToggle } from '@/components/language-toggle'
 
 interface EventSettings {
   ice_bath_capacity: string
@@ -107,7 +108,7 @@ export default function IceBathPage() {
         />
       </div>
 
-      <div className="relative z-10 flex min-h-dvh flex-col px-6 py-8">
+        <div className="relative z-10 flex min-h-dvh flex-col px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <button
@@ -117,9 +118,12 @@ export default function IceBathPage() {
             <ArrowLeft className="h-5 w-5" />
             <span className="text-sm">Back</span>
           </button>
-          <div className="flex items-center gap-2">
-            <Snowflake className="h-5 w-5 text-accent" />
-            <span className="font-display font-bold">HOOP</span>
+          <div className="flex items-center gap-4">
+            <LanguageToggle />
+            <div className="flex items-center gap-2">
+              <Snowflake className="h-5 w-5 text-accent" />
+              <span className="font-display font-bold">HOOP</span>
+            </div>
           </div>
         </div>
 

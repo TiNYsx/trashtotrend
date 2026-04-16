@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, ArrowLeft, Sparkles, Loader2 } from 'lucide-react'
+import { LanguageToggle } from '@/components/language-toggle'
 
 interface QuizOption {
   text_en: string
@@ -138,9 +139,12 @@ export default function QuizPage() {
             <span className="text-sm">Back</span>
           </button>
           
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-accent" />
-            <span className="font-display font-bold">HOOP</span>
+          <div className="flex items-center gap-4">
+            <LanguageToggle />
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-accent" />
+              <span className="font-display font-bold">HOOP</span>
+            </div>
           </div>
         </div>
 
