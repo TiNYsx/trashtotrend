@@ -77,7 +77,7 @@ export default function DashboardPage() {
         const url = await QRCode.toDataURL(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://hoop.exhibition'}/scan/${data.qr_token}`, {
           width: 300,
           margin: 2,
-          color: { dark: '#14b8a6', light: '#0a0a0f' }
+          color: { dark: '#ffffff', light: '#0a0a0f' }
         })
         setQrCodeUrl(url)
       }
