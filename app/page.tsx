@@ -1,53 +1,197 @@
+import Link from "next/link"
 import { getSession } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import Link from "next/link"
+import { 
+  ArrowRight, 
+  QrCode, 
+  Trophy, 
+  MapPin, 
+  Sparkles,
+  Recycle,
+  Users,
+  Zap
+} from "lucide-react"
 
 export default async function Home() {
   const session = await getSession()
 
-  if (session?.role === "customer") {
-    redirect("/stamps")
+  if (session?.role === "user" || session?.role === "customer") {
+    redirect("/dashboard")
   }
   if (session?.role === "staff" || session?.role === "admin") {
     redirect("/staff/dashboard")
   }
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center bg-background px-6">
-      <div className="animate-fade-in-up flex w-full max-w-sm flex-col items-center gap-8 text-center">
-        <div className="flex flex-col items-center gap-3">
-          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Thesis Exhibition</p>
-          <h1 className="font-serif text-4xl font-bold tracking-tight text-foreground">
-            FROM TRASH
-          </h1>
-          <p className="font-serif text-3xl italic text-accent">To Trend</p>
-          <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
-            when something that was once seen as worthless gets transformed into something valuable
+    <main className="relative min-h-dvh overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 gradient-bg">
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute left-1/4 top-1/4 h-96 w-96 animate-float rounded-full bg-primary/20 blur-[128px]" />
+          <div className="absolute right-1/4 top-1/2 h-80 w-80 animate-float rounded-full bg-accent/20 blur-[100px]" style={{ animationDelay: '-3s' }} />
+          <div className="absolute bottom-1/4 left-1/2 h-72 w-72 animate-float rounded-full bg-primary/10 blur-[120px]" style={{ animationDelay: '-5s' }} />
+        </div>
+        {/* Grid pattern */}
+        <div className="absolute inset-0 opacity-5" style={{
+          backgroundImage: `linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)`,
+          backgroundSize: '60px 60px'
+        }} />
+      </div>
+
+      {/* Floating particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-2 h-2 rounded-full bg-primary/40 animate-float"
+            style={{
+              left: `${15 + i * 15}%`,
+              top: `${20 + (i % 3) * 25}%`,
+              animationDelay: `${i * 0.8}s`,
+              animationDuration: `${5 + i}s`
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="relative z-10 flex min-h-dvh flex-col">
+        {/* Header */}
+        <header className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Recycle className="h-8 w-8 text-primary animate-rotate-slow" />
+              <div className="absolute inset-0 animate-glow-pulse">
+                <Recycle className="h-8 w-8 text-primary/50 blur-sm" />
+              </div>
+            </div>
+            <span className="font-display text-xl font-bold tracking-tight">HOOP</span>
+          </div>
+          <Link
+            href="/staff/login"
+            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Staff Portal
+          </Link>
+        </header>
+
+        {/* Hero Section */}
+        <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+          <div className="text-center max-w-lg mx-auto space-y-8">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass animate-fade-in">
+              <Sparkles className="h-4 w-4 text-accent" />
+              <span className="text-sm font-medium">Creative Exhibition</span>
+            </div>
+
+            {/* Title */}
+            <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+              <h1 className="font-display text-5xl md:text-6xl font-bold tracking-tight">
+                <span className="text-foreground">From </span>
+                <span className="text-primary text-glow">Trash</span>
+              </h1>
+              <p className="font-display text-4xl md:text-5xl font-bold italic text-accent text-glow-accent">
+                to Trend
+              </p>
+            </div>
+
+            {/* Description */}
+            <p className="text-muted-foreground text-lg leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+              Experience the transformation of aluminium from waste to worth. 
+              Join our circular economy journey and discover how trash becomes treasure.
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col gap-4 pt-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+              <Link
+                href="/quiz"
+                className="group relative flex h-14 items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground font-semibold transition-all hover:scale-[1.02] glow-primary"
+              >
+                <span>Start Your Journey</span>
+                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                <div className="absolute inset-0 rounded-xl animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent bg-[length:200%_100%]" />
+              </Link>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Link
+                  href="/about"
+                  className="flex h-12 items-center justify-center gap-2 rounded-xl border border-border glass font-medium transition-all hover:bg-secondary/50"
+                >
+                  <MapPin className="h-4 w-4" />
+                  Explore
+                </Link>
+                <Link
+                  href="/ice-bath"
+                  className="flex h-12 items-center justify-center gap-2 rounded-xl border border-accent/50 glass font-medium transition-all hover:bg-accent/10 group"
+                >
+                  <Zap className="h-4 w-4 text-accent" />
+                  <span className="text-accent">Ice Bath</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Requirement Notice */}
+            <p className="text-xs text-muted-foreground animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+              Remember: Bring your own aluminium can to participate
+            </p>
+          </div>
+        </div>
+
+        {/* Feature Cards */}
+        <div className="px-6 pb-12">
+          <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto">
+            <FeatureCard
+              icon={<QrCode className="h-5 w-5" />}
+              title="Scan & Collect"
+              description="Check in at booths"
+              delay={0.4}
+            />
+            <FeatureCard
+              icon={<Trophy className="h-5 w-5" />}
+              title="Earn Rewards"
+              description="Complete all 7 stations"
+              delay={0.5}
+            />
+            <FeatureCard
+              icon={<Users className="h-5 w-5" />}
+              title="Join the Loop"
+              description="Circular economy"
+              delay={0.6}
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <footer className="px-6 py-6 text-center">
+          <p className="text-xs text-muted-foreground">
+            Circular Economy Exhibition • Aluminium Loop Initiative
           </p>
-        </div>
-
-        <div className="flex w-full flex-col gap-3">
-          <Link
-            href="/login"
-            className="flex h-12 items-center justify-center rounded-lg bg-primary text-sm font-medium tracking-wide text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Login
-          </Link>
-          <Link
-            href="/register"
-            className="flex h-12 items-center justify-center rounded-lg border border-border bg-card text-sm font-medium tracking-wide text-foreground transition-colors hover:bg-secondary"
-          >
-            Register
-          </Link>
-        </div>
-
-        <Link
-          href="/staff/login"
-          className="text-xs text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
-        >
-          Staff Portal
-        </Link>
+        </footer>
       </div>
     </main>
+  )
+}
+
+function FeatureCard({ 
+  icon, 
+  title, 
+  description,
+  delay 
+}: { 
+  icon: React.ReactNode
+  title: string
+  description: string
+  delay: number
+}) {
+  return (
+    <div 
+      className="group glass rounded-xl p-4 text-center transition-all hover:bg-secondary/30 animate-fade-in-up"
+      style={{ animationDelay: `${delay}s` }}
+    >
+      <div className="flex justify-center mb-2 text-primary group-hover:scale-110 transition-transform">
+        {icon}
+      </div>
+      <h3 className="font-semibold text-sm mb-1">{title}</h3>
+      <p className="text-xs text-muted-foreground">{description}</p>
+    </div>
   )
 }

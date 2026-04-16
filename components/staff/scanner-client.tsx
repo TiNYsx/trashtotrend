@@ -9,26 +9,28 @@ import {
   XCircle,
   AlertTriangle,
   ArrowLeft,
+  MapPin,
+  Trophy,
 } from "lucide-react"
 import Link from "next/link"
 
-type Booth = { id: number; name_en: string; name_th: string }
+type Checkpoint = { id: number; slug: string; name_en: string; name_th: string }
 
-export function ScannerClient({ booths }: { booths: Booth[] }) {
+export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
   const { t, lang } = useLanguage()
-  const [selectedBooth, setSelectedBooth] = useState<number | null>(null)
+  const [selectedCheckpoint, setSelectedCheckpoint] = useState<Checkpoint | null>(null)
   const [scanning, setScanning] = useState(false)
   const [result, setResult] = useState<{
     type: "success" | "error" | "already"
     message: string
-    customer_email?: string
+    userName?: string
+    progress?: { completed: number; total: number }
   } | null>(null)
   const [insecureWarning, setInsecureWarning] = useState<string | null>(null)
   const scannerRef = useRef<HTMLDivElement>(null)
   const html5QrRef = useRef<unknown>(null)
   const isScannerRunningRef = useRef(false)
 
-  // detect if we're running in an insecure context (http and not localhost)
   useEffect(() => {
     if (typeof window !== "undefined") {
       const { protocol, hostname } = window.location
@@ -46,12 +48,10 @@ export function ScannerClient({ booths }: { booths: Booth[] }) {
     }
   }, [lang])
 
-  // Try to request camera permission proactively to trigger browser prompt
   const ensureCameraPermission = async () => {
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) return false
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-      // stop tracks immediately; html5-qrcode will open camera again
       stream.getTracks().forEach((t) => t.stop())
       return true
     } catch {
@@ -59,7 +59,6 @@ export function ScannerClient({ booths }: { booths: Booth[] }) {
     }
   }
 
-  // Start the camera scanner
   useEffect(() => {
     if (!scanning || !scannerRef.current) return
 
@@ -75,13 +74,11 @@ export function ScannerClient({ booths }: { booths: Booth[] }) {
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 250, height: 250 } },
           async (decodedText: string) => {
-            // Stop scanning immediately on success – only if running
             if (scanner && isScannerRunningRef.current) {
               try {
-                // stop may throw if already stopped; guard with ref
                 await (scanner as any).stop()
               } catch {
-                /* already stopped or failed to stop */
+                /* already stopped */
               } finally {
                 isScannerRunningRef.current = false
               }
@@ -91,11 +88,10 @@ export function ScannerClient({ booths }: { booths: Booth[] }) {
             await handleScan(decodedText)
           },
           () => {
-            /* ignore scan errors (no QR in frame) */
+            /* ignore scan errors */
           }
         )
 
-        // mark running after successful start
         isScannerRunningRef.current = true
       } catch {
         isScannerRunningRef.current = false
@@ -126,17 +122,16 @@ export function ScannerClient({ booths }: { booths: Booth[] }) {
         }
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scanning])
 
   const handleScan = async (qrToken: string) => {
-    if (!selectedBooth) return
+    if (!selectedCheckpoint) return
 
     try {
-      const res = await fetch("/api/scan", {
+      const res = await fetch("/api/checkpoint/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ qr_token: qrToken, booth_id: selectedBooth }),
+        body: JSON.stringify({ qrToken, checkpointSlug: selectedCheckpoint.slug }),
       })
 
       const data = await res.json()
@@ -144,13 +139,17 @@ export function ScannerClient({ booths }: { booths: Booth[] }) {
       if (res.ok) {
         setResult({
           type: "success",
-          message: t("scanSuccess"),
-          customer_email: data.customer_email,
+          message: `Checkpoint completed!`,
+          userName: data.user,
+          progress: data.progress,
         })
-      } else if (data.alreadyStamped) {
-        setResult({ type: "already", message: t("alreadyStamped") })
+      } else if (data.error === "Already completed") {
+        setResult({ 
+          type: "already", 
+          message: `${data.user} already completed ${data.checkpoint}` 
+        })
       } else {
-        setResult({ type: "error", message: data.error || t("scanError") })
+        setResult({ type: "error", message: data.error || "Scan failed" })
       }
     } catch {
       setResult({ type: "error", message: "Network error" })
@@ -181,57 +180,61 @@ export function ScannerClient({ booths }: { booths: Booth[] }) {
   }
 
   return (
-    <div>
-      <div className="flex items-center gap-3 mb-6">
-        <Link
-          href="/staff/dashboard"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-foreground">{t("scanQR")}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {lang === "th" ? "สแกน QR Code เพื่อประทับแสตมป์" : "Scan customer QR codes to stamp attendance"}
-          </p>
+    <div className="gradient-bg min-h-dvh p-6">
+      <div className="max-w-sm mx-auto">
+        <div className="flex items-center gap-3 mb-6">
+          <Link
+            href="/staff/dashboard"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <div>
+            <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-primary" />
+              Scan Checkpoint
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Scan customer QR codes to mark checkpoint completion
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="flex flex-col items-center gap-6">
-        {/* show insecure context warning if any */}
+        {/* Insecure context warning */}
         {insecureWarning && (
-          <div className="mb-4 w-full max-w-sm rounded-lg bg-yellow-100 px-4 py-3 text-center text-sm text-yellow-800">
+          <div className="mb-4 w-full rounded-lg bg-destructive/20 px-4 py-3 text-center text-sm text-destructive">
             {insecureWarning}
           </div>
         )}
-        {/* Step 1: Select booth */}
-        {!selectedBooth && (
+
+        {/* Step 1: Select checkpoint */}
+        {!selectedCheckpoint && (
           <motion.div
-            className="w-full max-w-sm"
+            className="w-full"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
           >
             <p className="mb-4 text-center text-sm font-medium text-foreground">
-              {t("selectBooth")}
+              Select a checkpoint:
             </p>
-            <div className="flex flex-col gap-2">
-              {booths.map((booth) => (
+            <div className="grid grid-cols-2 gap-3">
+              {checkpoints.map((checkpoint, idx) => (
                 <button
-                  key={booth.id}
-                  onClick={() => setSelectedBooth(booth.id)}
-                  className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-left transition-all hover:border-accent hover:shadow-sm"
+                  key={checkpoint.id}
+                  onClick={() => setSelectedCheckpoint(checkpoint)}
+                  className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 text-center transition-all hover:border-primary hover:bg-primary/5"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-bold text-foreground">
-                    {booth.id}
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-sm font-bold text-primary">
+                    {idx + 1}
                   </div>
                   <span className="text-sm font-medium text-foreground">
-                    {lang === "th" ? booth.name_th : booth.name_en}
+                    {lang === "th" ? checkpoint.name_th : checkpoint.name_en}
                   </span>
                 </button>
               ))}
-              {booths.length === 0 && (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  {t("noBooths")}
+              {checkpoints.length === 0 && (
+                <p className="col-span-2 py-8 text-center text-sm text-muted-foreground">
+                  No checkpoints configured
                 </p>
               )}
             </div>
@@ -239,31 +242,29 @@ export function ScannerClient({ booths }: { booths: Booth[] }) {
         )}
 
         {/* Step 2: Scanner or results */}
-        {selectedBooth && (
+        {selectedCheckpoint && (
           <motion.div
-            className="flex w-full max-w-sm flex-col items-center gap-4"
+            className="flex w-full flex-col items-center gap-4"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            {/* Booth indicator */}
-            <div className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2">
-              <span className="text-xs text-muted-foreground">
-                {t("booths")}:
-              </span>
+            {/* Checkpoint indicator */}
+            <div className="flex items-center gap-2 rounded-full glass px-4 py-2">
+              <MapPin className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-foreground">
                 {lang === "th"
-                  ? booths.find((b) => b.id === selectedBooth)?.name_th
-                  : booths.find((b) => b.id === selectedBooth)?.name_en}
+                  ? selectedCheckpoint.name_th
+                  : selectedCheckpoint.name_en}
               </span>
               <button
                 onClick={() => {
-                  setSelectedBooth(null)
+                  setSelectedCheckpoint(null)
                   setScanning(false)
                   setResult(null)
                 }}
-                className="ml-1 text-xs text-accent hover:text-accent/80"
+                className="ml-2 text-xs text-accent hover:text-accent/80"
               >
-                ({lang === "th" ? "เปลี่ยน" : "change"})
+                (change)
               </button>
             </div>
 
@@ -277,9 +278,7 @@ export function ScannerClient({ booths }: { booths: Booth[] }) {
                   style={{ minHeight: "300px" }}
                 />
                 <p className="py-3 text-center text-xs text-muted-foreground">
-                  {lang === "th"
-                    ? "จัด QR Code ให้อยู่ในกรอบ"
-                    : "Position QR code within the frame"}
+                  Position QR code within the frame
                 </p>
               </div>
             )}
@@ -291,36 +290,42 @@ export function ScannerClient({ booths }: { booths: Booth[] }) {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className={`flex w-full flex-col items-center gap-3 rounded-xl border p-6 ${
+                  className={`w-full flex flex-col items-center gap-3 rounded-xl border p-6 ${
                     result.type === "success"
-                      ? "border-green-200 bg-green-50"
+                      ? "border-primary/50 bg-primary/10"
                       : result.type === "already"
-                        ? "border-amber-200 bg-amber-50"
-                        : "border-red-200 bg-red-50"
+                        ? "border-accent/50 bg-accent/10"
+                        : "border-destructive/50 bg-destructive/10"
                   }`}
                 >
                   {result.type === "success" ? (
-                    <CheckCircle2 className="h-10 w-10 text-green-600" />
+                    <CheckCircle2 className="h-12 w-12 text-primary" />
                   ) : result.type === "already" ? (
-                    <AlertTriangle className="h-10 w-10 text-amber-600" />
+                    <AlertTriangle className="h-12 w-12 text-accent" />
                   ) : (
-                    <XCircle className="h-10 w-10 text-red-600" />
+                    <XCircle className="h-12 w-12 text-destructive" />
                   )}
                   <p
                     className={`text-center text-sm font-medium ${
                       result.type === "success"
-                        ? "text-green-800"
+                        ? "text-primary"
                         : result.type === "already"
-                          ? "text-amber-800"
-                          : "text-red-800"
+                          ? "text-accent"
+                          : "text-destructive"
                     }`}
                   >
                     {result.message}
                   </p>
-                  {result.customer_email && (
-                    <p className="text-xs text-muted-foreground">
-                      {result.customer_email}
-                    </p>
+                  {result.userName && (
+                    <p className="text-lg font-bold text-foreground">{result.userName}</p>
+                  )}
+                  {result.progress && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <Trophy className="h-4 w-4 text-accent" />
+                      <span className="text-sm text-muted-foreground">
+                        Progress: {result.progress.completed} / {result.progress.total}
+                      </span>
+                    </div>
                   )}
                 </motion.div>
               )}
@@ -330,16 +335,12 @@ export function ScannerClient({ booths }: { booths: Booth[] }) {
             {!scanning && (
               <button
                 onClick={startNewScan}
-                className="flex h-14 items-center gap-3 rounded-full bg-primary px-8 text-sm font-medium text-primary-foreground shadow-lg transition-all hover:bg-primary/90 hover:shadow-xl"
+                className="flex h-14 items-center gap-3 rounded-full bg-primary px-8 text-sm font-semibold text-primary-foreground shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl glow-primary"
               >
                 <Camera className="h-5 w-5" />
                 {result
-                  ? lang === "th"
-                    ? "สแกนอีกครั้ง"
-                    : "Scan Again"
-                  : lang === "th"
-                    ? "เริ่มสแกน"
-                    : "Start Scanning"}
+                  ? "Scan Again"
+                  : "Start Scanning"}
               </button>
             )}
 
@@ -354,7 +355,7 @@ export function ScannerClient({ booths }: { booths: Booth[] }) {
                 }}
                 className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
               >
-                {t("cancel")}
+                Cancel
               </button>
             )}
           </motion.div>

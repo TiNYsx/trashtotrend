@@ -10,7 +10,7 @@ const COOKIE_NAME = "ftt_session"
 
 export type SessionPayload = {
   id: number
-  role: "customer" | "staff" | "admin"
+  role: "customer" | "user" | "staff" | "admin"
   email?: string
   username?: string
 }
@@ -49,6 +49,14 @@ export async function getSession(): Promise<SessionPayload | null> {
 }
 
 export async function requireCustomer(): Promise<SessionPayload> {
+  const session = await getSession()
+  if (!session || session.role === "staff" || session.role === "admin") {
+    redirect("/login")
+  }
+  return session
+}
+
+export async function requireUser(): Promise<SessionPayload> {
   const session = await getSession()
   if (!session || session.role === "staff" || session.role === "admin") {
     redirect("/login")

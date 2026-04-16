@@ -1,25 +1,25 @@
 import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
-import { Playfair_Display } from "next/font/google"
+import { Space_Grotesk } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Providers } from "@/components/providers"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
-const _playfair = Playfair_Display({
+const _spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
-  variable: "--font-playfair",
+  variable: "--font-display",
   display: "swap",
 })
 
 export const metadata: Metadata = {
-  title: "From Trash to Trend",
-  description: "Event stamp collection - when something once seen as worthless gets transformed into something valuable",
+  title: "HOOP - From Trash to Trend",
+  description: "Experience the transformation of aluminium from waste to worth. Join our circular economy journey.",
 }
 
 export const viewport: Viewport = {
-  themeColor: "#F5F2ED",
+  themeColor: "#0a0a0f",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,

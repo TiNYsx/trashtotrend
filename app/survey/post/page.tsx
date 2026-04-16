@@ -1,0 +1,198 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
+import { ArrowLeft, CheckCircle, Trophy, Loader2 } from 'lucide-react'
+
+const SURVEY_QUESTIONS = [
+  'I am aware of the environmental impact of aluminium waste.',
+  'I understand the concept of circular economy.',
+  'I regularly recycle aluminium products.',
+  'I believe individual actions can make a difference for the environment.',
+  'I am interested in learning more about sustainable practices.',
+  'I would be willing to pay more for eco-friendly products.',
+  'I have participated in environmental activities before.',
+  'I believe businesses should be responsible for recycling their products.'
+]
+
+export default function PostSurveyPage() {
+  const router = useRouter()
+  const [currentQ, setCurrentQ] = useState(0)
+  const [answers, setAnswers] = useState<Record<number, number>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isComplete, setIsComplete] = useState(false)
+
+  const handleAnswer = (score: number) => {
+    const newAnswers = { ...answers, [currentQ]: score }
+    setAnswers(newAnswers)
+
+    if (currentQ < SURVEY_QUESTIONS.length - 1) {
+      setCurrentQ(currentQ + 1)
+    } else {
+      submitSurvey(newAnswers)
+    }
+  }
+
+  const submitSurvey = async (finalAnswers: Record<number, number>) => {
+    setIsSubmitting(true)
+    try {
+      const res = await fetch('/api/survey/post', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers: finalAnswers })
+      })
+
+      if (res.ok) {
+        setIsComplete(true)
+      }
+    } catch (err) {
+      console.error('Failed to submit survey:', err)
+    }
+    setIsSubmitting(false)
+  }
+
+  const goBack = () => {
+    if (currentQ > 0) {
+      setCurrentQ(currentQ - 1)
+    }
+  }
+
+  if (isComplete) {
+    return (
+      <main className="relative min-h-dvh gradient-bg">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <motion.div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-96 w-96 rounded-full bg-accent/20 blur-[120px]"
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+          />
+          <motion.div
+            className="absolute top-1/3 right-1/4 h-48 w-48 rounded-full bg-primary/20 blur-[80px]"
+            animate={{ opacity: [0.3, 0.5, 0.3] }}
+            transition={{ duration: 3, repeat: Infinity }}
+          />
+        </div>
+        <div className="relative z-10 flex min-h-dvh flex-col items-center justify-center px-6 py-8">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 200 }}
+            className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-accent/20 mb-6"
+          >
+            <Trophy className="h-12 w-12 text-accent animate-glow-pulse" />
+          </motion.div>
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="font-display text-3xl font-bold text-center mb-2"
+          >
+            Amazing Work!
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-muted-foreground text-center mb-8"
+          >
+            Your reward has been unlocked!
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="glass rounded-2xl p-6 text-center max-w-sm w-full mb-6"
+          >
+            <p className="text-sm text-muted-foreground mb-4">
+              Show this screen to staff at the reward counter to claim your prize.
+            </p>
+          </motion.div>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="h-12 px-8 rounded-xl bg-accent text-accent-foreground font-semibold"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </main>
+    )
+  }
+
+  const progress = ((currentQ + 1) / SURVEY_QUESTIONS.length) * 100
+
+  return (
+    <main className="relative min-h-dvh gradient-bg">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 h-64 w-64 rounded-full bg-accent/10 blur-[100px] animate-pulse-slow" />
+      </div>
+
+      <div className="relative z-10 flex min-h-dvh flex-col px-6 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <button
+            onClick={goBack}
+            className="flex items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span className="text-sm">Back</span>
+          </button>
+          <span className="text-sm text-accent font-medium">
+            Post-Survey
+          </span>
+        </div>
+
+        {/* Progress */}
+        <div className="mb-12 space-y-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Question {currentQ + 1} of {SURVEY_QUESTIONS.length}</span>
+            <span className="font-semibold text-accent">{Math.round(progress)}%</span>
+          </div>
+          <div className="h-2 rounded-full bg-secondary overflow-hidden">
+            <motion.div
+              className="h-full rounded-full bg-accent"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto w-full">
+          <motion.div
+            key={currentQ}
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -50 }}
+            className="w-full text-center mb-12"
+          >
+            <p className="text-xl font-medium leading-relaxed">
+              {SURVEY_QUESTIONS[currentQ]}
+            </p>
+          </motion.div>
+
+          {/* Scale buttons */}
+          <div className="w-full grid grid-cols-5 gap-2">
+            {[1, 2, 3, 4, 5].map((score) => (
+              <button
+                key={score}
+                onClick={() => handleAnswer(score)}
+                disabled={isSubmitting}
+                className="h-16 rounded-xl border border-border glass font-bold text-lg transition-all hover:bg-accent hover:text-accent-foreground hover:border-accent disabled:opacity-50"
+              >
+                {score}
+              </button>
+            ))}
+          </div>
+          <div className="w-full flex justify-between text-xs text-muted-foreground mt-3 px-2">
+            <span>Strongly Disagree</span>
+            <span>Strongly Agree</span>
+          </div>
+        </div>
+
+        {isSubmitting && (
+          <div className="fixed inset-0 flex items-center justify-center bg-background/80 z-50">
+            <Loader2 className="h-10 w-10 text-accent animate-spin" />
+          </div>
+        )}
+      </div>
+    </main>
+  )
+}
