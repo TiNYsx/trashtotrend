@@ -94,7 +94,28 @@ export default function QuizPage() {
     )
   }
 
+  if (questions.length === 0) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center gradient-bg">
+        <div className="text-center space-y-4 px-6">
+          <Sparkles className="h-10 w-10 text-muted-foreground mx-auto" />
+          <p className="text-muted-foreground">Quiz questions coming soon...</p>
+        </div>
+      </main>
+    )
+  }
+
   const currentQuestion = questions[currentIndex]
+  
+  if (!currentQuestion?.options || currentQuestion.options.length === 0) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center gradient-bg">
+        <div className="text-center space-y-4 px-6">
+          <p className="text-muted-foreground">Loading question...</p>
+        </div>
+      </main>
+    )
+  }
   const progress = ((currentIndex + 1) / questions.length) * 100
 
   return (

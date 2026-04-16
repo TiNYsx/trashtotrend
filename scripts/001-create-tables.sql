@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS quiz_questions (
   question_en TEXT NOT NULL,
   question_th TEXT NOT NULL,
   options JSONB NOT NULL,
-  display_order INT DEFAULT 0,
+  display_order INT UNIQUE DEFAULT 0,
   is_active BOOLEAN DEFAULT true
 );
 
@@ -163,9 +163,9 @@ INSERT INTO quiz_questions (question_en, question_th, options, display_order) VA
    '[{"text_en": "Create your own content to share", "text_th": "สร้างคอนเทนต์ของตัวเองเพื่อแชร์", "type": "A"}, {"text_en": "Wander and discover unexpected things", "text_th": "เดินชมและค้นพบสิ่งไม่คาดคิด", "type": "D"}, {"text_en": "Take time to understand each exhibit deeply", "text_th": "ใช้เวลาทำความเข้าใจแต่ละรายการอย่างลึกซึ้ง", "type": "B"}, {"text_en": "Try every interactive activity available", "text_th": "ลองทุกกิจกรรมที่โต้ตอบได้", "type": "C"}, {"text_en": "Focus on the most important messages", "text_th": "โฟกัสที่ข้อความสำคัญที่สุด", "type": "E"}]', 3),
   ('How do you prefer to learn?', 'คุณชอบเรียนรู้อย่างไร?', 
    '[{"text_en": "Through hands-on creation and making", "text_th": "ผ่านการลงมือทำจริง", "type": "A"}, {"text_en": "Through exploration and discovery", "text_th": "ผ่านการสำรวจและค้นพบ", "type": "D"}, {"text_en": "Through careful observation and reading", "text_th": "ผ่านการสังเกตและอ่านอย่างระมัดระวัง", "type": "B"}, {"text_en": "Through games and challenges", "text_th": "ผ่านเกมและการท้าทาย", "type": "C"}, {"text_en": "Through simplified explanations", "text_th": "ผ่านคำอธิบายที่เรียบง่าย", "type": "E"}]', 4),
-  ('What motivates you most?', 'อะไเป็นแรงจูงใจหลักของคุณ?', 
+  ('What motivates you most?', 'อะไรเป็นแรงจูงใจหลักของคุณ?', 
    '[{"text_en": "Making something beautiful from waste", "text_th": "การสร้างสิ่งสวยงามจากของเหลือใช้", "type": "A"}, {"text_en": "Discovering how things work together", "text_th": "การค้นพบว่าสิ่งต่างๆ ทำงานร่วมกันอย่างไร", "type": "D"}, {"text_en": "Understanding the deeper meaning", "text_th": "การเข้าใจความหมายที่ลึกซึ้ง", "type": "B"}, {"text_en": "Winning and achieving goals", "text_th": "การชนะและบรรลุเป้าหมาย", "type": "C"}, {"text_en": "Restoring balance and order", "text_th": "การฟื้นฟูความสมดุลและความเป็นระเบียบ", "type": "E"}]', 5)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (display_order) DO NOTHING;
 
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_checkpoint_completions_user ON checkpoint_completions(user_id);
