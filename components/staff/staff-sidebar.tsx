@@ -17,6 +17,7 @@ import {
   LogOut,
   Menu,
   X,
+  BrainCircuit,
 } from "lucide-react"
 import { useState } from "react"
 
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/staff/scan", icon: ScanLine, labelKey: "scanQR" as const },
   { href: "/staff/booths", icon: Store, labelKey: "booths" as const },
   { href: "/staff/registration", icon: ClipboardList, labelKey: "registrationFields" as const },
+  { href: "/staff/quiz", icon: BrainCircuit, labelKey: "quizQuestions" as const },
   { href: "/staff/customers", icon: Users, labelKey: "customers" as const },
   { href: "/staff/settings", icon: Settings, labelKey: "settings" as const },
 ]

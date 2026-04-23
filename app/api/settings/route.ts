@@ -3,9 +3,12 @@ import { query } from '@/lib/db'
 import { requireStaff } from '@/lib/auth'
 
 export async function GET() {
+  const session = await requireStaff()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  
   try {
-    await requireStaff()
-    
     const result = await query('SELECT key, value FROM event_settings')
     const settings: Record<string, string> = {}
     result.rows.forEach(row => {
@@ -20,8 +23,12 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const session = await requireStaff()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  
   try {
-    await requireStaff()
     const settings = await request.json()
     
     for (const [key, value] of Object.entries(settings)) {

@@ -98,7 +98,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
         setScanning(false)
         setResult({
           type: "error",
-          message: "Camera access denied or unavailable",
+          message: t("cameraDenied"),
         })
       }
     }
@@ -139,20 +139,20 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
       if (res.ok) {
         setResult({
           type: "success",
-          message: `Checkpoint completed!`,
+          message: t("checkpointCompleted"),
           userName: data.user,
           progress: data.progress,
         })
       } else if (data.error === "Already completed") {
-        setResult({ 
-          type: "already", 
-          message: `${data.user} already completed ${data.checkpoint}` 
+        setResult({
+          type: "already",
+          message: `${data.user} ${lang === "th" ? "ประทับตราที่" : "already completed"} ${data.checkpoint}`
         })
       } else {
-        setResult({ type: "error", message: data.error || "Scan failed" })
+        setResult({ type: "error", message: data.error || t("scanFailed") })
       }
     } catch {
-      setResult({ type: "error", message: "Network error" })
+      setResult({ type: "error", message: t("networkError") })
     }
   }
 
@@ -192,10 +192,10 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
           <div>
             <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
               <MapPin className="h-5 w-5 text-primary" />
-              Scan Checkpoint
+              {t("scanCheckpoint")}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Scan customer QR codes to mark checkpoint completion
+              {t("scanCustomerQR")}
             </p>
           </div>
         </div>
@@ -215,7 +215,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
             animate={{ opacity: 1, y: 0 }}
           >
             <p className="mb-4 text-center text-sm font-medium text-foreground">
-              Select a checkpoint:
+              {t("selectCheckpoint")}:
             </p>
             <div className="grid grid-cols-2 gap-3">
               {checkpoints.map((checkpoint, idx) => (
@@ -234,7 +234,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
               ))}
               {checkpoints.length === 0 && (
                 <p className="col-span-2 py-8 text-center text-sm text-muted-foreground">
-                  No checkpoints configured
+                  {t("noBooths")}
                 </p>
               )}
             </div>
@@ -264,7 +264,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
                 }}
                 className="ml-2 text-xs text-accent hover:text-accent/80"
               >
-                (change)
+                ({t("change")})
               </button>
             </div>
 
@@ -278,7 +278,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
                   style={{ minHeight: "300px" }}
                 />
                 <p className="py-3 text-center text-xs text-muted-foreground">
-                  Position QR code within the frame
+                  {t("positionQR")}
                 </p>
               </div>
             )}
@@ -339,8 +339,8 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
               >
                 <Camera className="h-5 w-5" />
                 {result
-                  ? "Scan Again"
-                  : "Start Scanning"}
+                  ? t("scanAgain")
+                  : t("startScanning")}
               </button>
             )}
 

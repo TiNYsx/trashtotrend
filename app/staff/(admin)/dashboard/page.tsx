@@ -3,6 +3,8 @@ import { getOne } from "@/lib/db"
 import { requireStaff } from "@/lib/auth"
 import { DashboardStats } from "@/components/staff/dashboard-stats"
 
+export const dynamic = "force-dynamic"
+
 type Stats = {
   total_customers: string
   total_stamps: string

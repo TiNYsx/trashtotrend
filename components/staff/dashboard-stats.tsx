@@ -21,12 +21,12 @@ const cards = [
 ]
 
 export function DashboardStats({ stats }: Props) {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
 
   return (
     <div>
       <h1 className="font-serif text-2xl font-bold text-foreground">{t("dashboard")}</h1>
-      <p className="mt-1 text-sm text-muted-foreground">From Trash to Trend - Event Overview</p>
+      <p className="mt-1 text-sm text-muted-foreground">{t("eventOverview")}</p>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card, i) => (

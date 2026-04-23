@@ -73,6 +73,13 @@ export default function DashboardPage() {
     try {
       const res = await fetch('/api/user/dashboard')
       const data = await res.json()
+      
+      if (!res.ok || data.error) {
+        console.error('Failed to fetch user data:', data.error)
+        window.location.href = '/login'
+        return
+      }
+      
       setUserData(data)
       
       if (data.qr_token) {

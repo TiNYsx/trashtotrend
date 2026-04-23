@@ -29,7 +29,7 @@ export function BoothsManager({ initialBooths }: { initialBooths: Booth[] }) {
       const result = await createBooth(formData)
       if (result.success) {
         setShowForm(false)
-        toast.success("Booth created")
+        toast.success(t("boothCreated"))
       }
       return result
     },
@@ -41,7 +41,7 @@ export function BoothsManager({ initialBooths }: { initialBooths: Booth[] }) {
       const result = await updateBooth(formData)
       if (result.success) {
         setEditingBooth(null)
-        toast.success("Booth updated")
+        toast.success(t("boothUpdated"))
       }
       return result
     },
@@ -51,7 +51,7 @@ export function BoothsManager({ initialBooths }: { initialBooths: Booth[] }) {
   const handleDelete = async (id: number) => {
     if (!confirm(t("confirmDelete"))) return
     const result = await deleteBooth(id)
-    if (result.success) toast.success("Booth deleted")
+    if (result.success) toast.success(t("boothDeleted"))
     else toast.error(result.error)
   }
 
@@ -68,7 +68,7 @@ export function BoothsManager({ initialBooths }: { initialBooths: Booth[] }) {
           <div>
             <h1 className="font-serif text-2xl font-bold text-foreground">{t("booths")}</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {lang === "th" ? "จัดการบูธในงาน" : "Manage event booths"}
+              {t("manageBooths")}
             </p>
           </div>
         </div>
@@ -97,22 +97,22 @@ export function BoothsManager({ initialBooths }: { initialBooths: Booth[] }) {
             {editingBooth && <input type="hidden" name="id" value={editingBooth.id} />}
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium">{t("boothName")} (EN)</label>
+              <label className="text-sm font-medium">{t("boothName")} ({t("english")})</label>
               <input name="name_en" defaultValue={editingBooth?.name_en || ""} required
                 className="h-10 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium">{t("boothName")} (TH)</label>
+              <label className="text-sm font-medium">{t("boothName")} ({t("thai")})</label>
               <input name="name_th" defaultValue={editingBooth?.name_th || ""} required
                 className="h-10 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium">{t("description")} (EN)</label>
+              <label className="text-sm font-medium">{t("description")} ({t("english")})</label>
               <textarea name="description_en" defaultValue={editingBooth?.description_en || ""} rows={3}
                 className="rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium">{t("description")} (TH)</label>
+              <label className="text-sm font-medium">{t("description")} ({t("thai")})</label>
               <textarea name="description_th" defaultValue={editingBooth?.description_th || ""} rows={3}
                 className="rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
             </div>
@@ -132,8 +132,8 @@ export function BoothsManager({ initialBooths }: { initialBooths: Booth[] }) {
                 <label className="text-sm font-medium">{t("active")}</label>
                 <select name="is_active" defaultValue={editingBooth.is_active ? "true" : "false"}
                   className="h-10 rounded-lg border border-input bg-background px-3 text-sm">
-                  <option value="true">Yes</option>
-                  <option value="false">No</option>
+                  <option value="true">{t("yes")}</option>
+                  <option value="false">{t("no")}</option>
                 </select>
               </div>
             )}

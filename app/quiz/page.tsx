@@ -111,7 +111,7 @@ export default function QuizPage() {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 3000)
       
-      const res = await fetch('/api/quiz', { signal: controller.signal })
+      const res = await fetch('/api/quiz?category=journey', { signal: controller.signal })
       clearTimeout(timeoutId)
       
       if (!res.ok) throw new Error('API error')

@@ -28,7 +28,7 @@ export function RegistrationManager({ initialFields }: { initialFields: Field[] 
   const [, createAction, createPending] = useActionState(
     async (_prev: unknown, formData: FormData) => {
       const result = await createRegistrationField(formData)
-      if (result.success) { setShowForm(false); toast.success("Field created") }
+      if (result.success) { setShowForm(false); toast.success(t("fieldCreated")) }
       return result
     },
     null
@@ -37,7 +37,7 @@ export function RegistrationManager({ initialFields }: { initialFields: Field[] 
   const [, updateAction, updatePending] = useActionState(
     async (_prev: unknown, formData: FormData) => {
       const result = await updateRegistrationField(formData)
-      if (result.success) { setEditingField(null); toast.success("Field updated") }
+      if (result.success) { setEditingField(null); toast.success(t("fieldUpdated")) }
       return result
     },
     null
@@ -46,7 +46,7 @@ export function RegistrationManager({ initialFields }: { initialFields: Field[] 
   const handleDelete = async (id: number) => {
     if (!confirm(t("confirmDelete"))) return
     const result = await deleteRegistrationField(id)
-    if (result.success) toast.success("Field deleted")
+    if (result.success) toast.success(t("fieldDeleted"))
     else toast.error(result.error)
   }
 
@@ -63,7 +63,7 @@ export function RegistrationManager({ initialFields }: { initialFields: Field[] 
           <div>
             <h1 className="font-serif text-2xl font-bold text-foreground">{t("registrationFields")}</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {lang === "th" ? "จัดการฟิลด์ลงทะเบียนสำหรับลูกค้า" : "Manage customer registration form fields"}
+              {t("manageRegistrationFields")}
             </p>
           </div>
         </div>
@@ -93,12 +93,12 @@ export function RegistrationManager({ initialFields }: { initialFields: Field[] 
               </div>
             )}
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium">Label (EN)</label>
+              <label className="text-sm font-medium">{t("labelEn")}</label>
               <input name="label_en" defaultValue={editingField?.label_en || ""} required
                 className="h-10 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium">Label (TH)</label>
+              <label className="text-sm font-medium">{t("labelTh")}</label>
               <input name="label_th" defaultValue={editingField?.label_th || ""} required
                 className="h-10 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
             </div>
@@ -106,15 +106,15 @@ export function RegistrationManager({ initialFields }: { initialFields: Field[] 
               <label className="text-sm font-medium">{t("fieldType")}</label>
               <select name="field_type" defaultValue={editingField?.field_type || "text"}
                 className="h-10 rounded-lg border border-input bg-background px-3 text-sm">
-                <option value="text">Text</option>
-                <option value="email">Email</option>
+                <option value="text">{t("shortText")}</option>
+                <option value="email">{t("email")}</option>
                 <option value="tel">Phone</option>
                 <option value="number">Number</option>
-                <option value="select">Select / Dropdown</option>
+                <option value="select">{t("selectDropdown")}</option>
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium">{t("options")} (for select, comma-separated)</label>
+              <label className="text-sm font-medium">{t("options")} ({t("commaSeparated")})</label>
               <input name="options" defaultValue={editingField?.options?.join(", ") || ""} placeholder="Option A, Option B"
                 className="h-10 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
             </div>
@@ -124,22 +124,22 @@ export function RegistrationManager({ initialFields }: { initialFields: Field[] 
                 className="h-10 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent" />
             </div>
             <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 text-sm">
-                <select name="is_required" defaultValue={editingField?.is_required ? "true" : "false"}
-                  className="h-10 rounded-lg border border-input bg-background px-3 text-sm">
-                  <option value="true">{t("required")}: Yes</option>
-                  <option value="false">{t("required")}: No</option>
-                </select>
-              </label>
-              {editingField && (
-                <label className="flex items-center gap-2 text-sm">
-                  <select name="is_active" defaultValue={editingField.is_active ? "true" : "false"}
+<label className="flex items-center gap-2 text-sm">
+                  <select name="is_required" defaultValue={editingField?.is_required ? "true" : "false"}
                     className="h-10 rounded-lg border border-input bg-background px-3 text-sm">
-                    <option value="true">{t("active")}: Yes</option>
-                    <option value="false">{t("active")}: No</option>
+                    <option value="true">{t("required")}: {t("yes")}</option>
+                    <option value="false">{t("required")}: {t("no")}</option>
                   </select>
                 </label>
-              )}
+                {editingField && (
+                  <label className="flex items-center gap-2 text-sm">
+                    <select name="is_active" defaultValue={editingField.is_active ? "true" : "false"}
+                      className="h-10 rounded-lg border border-input bg-background px-3 text-sm">
+                      <option value="true">{t("active")}: {t("yes")}</option>
+                      <option value="false">{t("active")}: {t("no")}</option>
+                    </select>
+                  </label>
+                )}
             </div>
 
             <div className="flex gap-3 sm:col-span-2">
@@ -158,7 +158,7 @@ export function RegistrationManager({ initialFields }: { initialFields: Field[] 
 
       <div className="mt-6 space-y-3">
         {initialFields.length === 0 ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">No registration fields yet</p>
+          <p className="py-12 text-center text-sm text-muted-foreground">{t("noRegistrationFields")}</p>
         ) : (
           initialFields.map((field) => (
             <div key={field.id} className="flex items-center gap-4 rounded-xl border border-border bg-card px-5 py-4">
@@ -167,7 +167,7 @@ export function RegistrationManager({ initialFields }: { initialFields: Field[] 
                   <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-mono">{field.field_key}</span>
                   <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{field.field_type}</span>
                   {field.is_required && <span className="text-[10px] text-accent font-medium">{t("required")}</span>}
-                  {!field.is_active && <span className="text-[10px] text-muted-foreground">(inactive)</span>}
+                  {!field.is_active && <span className="text-[10px] text-muted-foreground">({t("inactive")})</span>}
                 </div>
                 <p className="text-sm font-medium text-foreground">{lang === "th" ? field.label_th : field.label_en}</p>
               </div>

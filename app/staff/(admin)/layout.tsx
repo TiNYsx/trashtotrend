@@ -2,6 +2,8 @@ import { redirect } from "next/navigation"
 import { requireStaff } from "@/lib/auth"
 import { StaffSidebar } from "@/components/staff/staff-sidebar"
 
+export const dynamic = "force-dynamic"
+
 export default async function StaffAdminLayout({
   children,
 }: {

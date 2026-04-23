@@ -146,6 +146,12 @@ NEXT_PUBLIC_BASE_URL=https://your-domain.com
 - **Animations**: Smooth transitions, progress indicators
 - **Typography**: Space Grotesk for display text
 
+## TODO
+
+- **Markdown Support**: Add a markdown support and re-design the "About Us" part on setting page.
+- **Rework Quiz**: Add pre/post test setting + Add manual options-personality linking.
+- **Registeration Check**: Need to check if the email is used or not - right now the email can re-use.
+
 ## License
 
 Part of thesis exhibition. All rights reserved.
