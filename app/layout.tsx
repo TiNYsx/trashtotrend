@@ -1,15 +1,12 @@
 import type { Metadata, Viewport } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
-import { Space_Grotesk } from "next/font/google"
+import localFont from "next/font/local"
 import { Analytics } from "@vercel/analytics/next"
 import { Providers } from "@/components/providers"
 import "./globals.css"
 
-const _geist = Geist({ subsets: ["latin"] })
-const _geistMono = Geist_Mono({ subsets: ["latin"] })
-const _spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-display",
+const dbHelvethaica = localFont({
+  src: "../fonts/DB Helvethaica X Li v3.2.ttf",
+  variable: "--font-sans",
   display: "swap",
 })
 
@@ -33,7 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="th">
-      <body className="font-sans antialiased">
+      <body className={`${dbHelvethaica.variable} font-sans antialiased`}>
         <Providers>{children}</Providers>
         <Analytics />
       </body>

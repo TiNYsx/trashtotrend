@@ -25,6 +25,17 @@ export default function StaffLoginPage() {
           </div>
         </div>
         <StaffLoginForm />
+        
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-6 text-center">
+            <a 
+              href="/api/dev-login?staff=1" 
+              className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
+            >
+              Dev Login (Skip Authentication)
+            </a>
+          </div>
+        )}
       </div>
     </main>
   )

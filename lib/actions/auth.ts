@@ -29,7 +29,7 @@ export async function loginCustomer(formData: FormData) {
   }
 
   await createSession({ id: customer.id, role: "customer", email: customer.email })
-  redirect("/stamps")
+  return { success: true, redirectTo: "/stamps" }
 }
 
 export async function registerCustomer(formData: FormData) {
@@ -86,7 +86,7 @@ export async function registerCustomer(formData: FormData) {
     await createSession({ id: customer.id, role: "customer", email: customer.email })
   }
 
-  redirect("/stamps")
+  return { success: true, redirectTo: "/stamps" }
 }
 
 export async function loginStaff(formData: FormData) {
@@ -118,7 +118,7 @@ export async function loginStaff(formData: FormData) {
     role: staff.role as "staff" | "admin",
     username: staff.username,
   })
-  redirect("/staff/dashboard")
+  return { success: true, redirectTo: "/staff/dashboard" }
 }
 
 export async function logout() {

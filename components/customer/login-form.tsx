@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useEffect } from "react"
 import { loginCustomer } from "@/lib/actions/auth"
 import { useLanguage } from "@/components/providers"
 import { LanguageToggle } from "@/components/language-toggle"
@@ -9,11 +9,17 @@ import Link from "next/link"
 export function LoginForm() {
   const { t } = useLanguage()
   const [state, action, pending] = useActionState(
-    async (_prev: { error?: string } | null, formData: FormData) => {
+    async (_prev: { error?: string; success?: boolean; redirectTo?: string } | null, formData: FormData) => {
       return await loginCustomer(formData)
     },
     null
   )
+
+  useEffect(() => {
+    if (state?.success && state?.redirectTo) {
+      window.location.href = state.redirectTo
+    }
+  }, [state])
 
   return (
     <form action={action} className="flex flex-col gap-5">

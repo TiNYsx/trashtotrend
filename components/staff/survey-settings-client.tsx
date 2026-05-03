@@ -186,6 +186,18 @@ export function SurveySettingsClient({
                       </span>
                     )}
                   </div>
+                  {q.question_type === "multiple_choice" && q.options && q.options.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {q.options.map((opt, optIdx) => (
+                        <div key={optIdx} className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span className="text-xs font-medium text-primary w-5">
+                            {String.fromCharCode(65 + optIdx)}.
+                          </span>
+                          <span>{lang === "th" ? opt.text_th : opt.text_en}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-1">
                   <button
@@ -245,6 +257,25 @@ function SurveyQuestionModal({
   const [questionTh, setQuestionTh] = useState(question?.question_th || "")
   const [questionType, setQuestionType] = useState(question?.question_type || "rating")
   const [isRequired, setIsRequired] = useState(question?.is_required ?? true)
+  const [options, setOptions] = useState<{ text_en: string; text_th: string }[]>(
+    question?.options && question.options.length > 0 
+      ? question.options 
+      : []
+  )
+
+  const handleAddOption = () => {
+    setOptions([...options, { text_en: "", text_th: "" }])
+  }
+
+  const handleRemoveOption = (idx: number) => {
+    setOptions(options.filter((_, i) => i !== idx))
+  }
+
+  const handleUpdateOption = (idx: number, field: 'text_en' | 'text_th', value: string) => {
+    const newOptions = [...options]
+    newOptions[idx][field] = value
+    setOptions(newOptions)
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -253,7 +284,7 @@ function SurveyQuestionModal({
       question_en: questionEn,
       question_th: questionTh,
       question_type: questionType,
-      options: null,
+      options: questionType === "multiple_choice" && options.length > 0 ? options : null,
       is_required: isRequired,
       display_order: question?.display_order || 0,
       is_active: true
@@ -262,7 +293,7 @@ function SurveyQuestionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-xl border border-border bg-card p-6 space-y-4">
+      <div className="w-full max-w-lg rounded-xl border border-border bg-card p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-bold">
           {question 
             ? (lang === "th" ? "แก้ไขคำถาม" : "Edit Question")
@@ -301,6 +332,61 @@ function SurveyQuestionModal({
               <option value="multiple_choice">Multiple Choice</option>
             </select>
           </div>
+
+          {/* Multiple Choice Options Editor */}
+          {questionType === "multiple_choice" && (
+            <div className="space-y-3 p-4 rounded-lg border border-border bg-secondary/30">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">
+                  {lang === "th" ? "ตัวเลือก" : "Options"}
+                </label>
+                <button
+                  type="button"
+                  onClick={handleAddOption}
+                  className="flex items-center gap-1 text-sm text-primary hover:underline"
+                >
+                  <Plus className="h-3 w-3" />
+                  {lang === "th" ? "เพิ่มตัวเลือก" : "Add Option"}
+                </button>
+              </div>
+              
+              {options.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {lang === "th" ? "ยังไม่มีตัวเลือก กด \"เพิ่มตัวเลือก\" เพื่อเพิ่ม" : "No options yet. Click \"Add Option\" to add one."}
+                </p>
+              )}
+
+              <div className="space-y-2">
+                {options.map((option, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-muted-foreground w-6">
+                      {String.fromCharCode(65 + idx)}.
+                    </span>
+                    <input
+                      value={option.text_en}
+                      onChange={(e) => handleUpdateOption(idx, 'text_en', e.target.value)}
+                      placeholder={lang === "th" ? "ตัวเลือก (EN)" : "Option (EN)"}
+                      className="flex-1 h-9 px-3 rounded-lg border border-input bg-background text-sm"
+                    />
+                    <input
+                      value={option.text_th}
+                      onChange={(e) => handleUpdateOption(idx, 'text_th', e.target.value)}
+                      placeholder={lang === "th" ? "ตัวเลือก (TH)" : "Option (TH)"}
+                      className="flex-1 h-9 px-3 rounded-lg border border-input bg-background text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveOption(idx)}
+                      className="p-1.5 text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-2">
             <input
               type="checkbox"

@@ -139,11 +139,11 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <div className="relative z-10 min-h-dvh px-6 py-8">
+      <div className="relative z-10 min-h-dvh px-4 py-6 sm:px-6 sm:py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="relative w-12 h-12">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6 sm:mb-8">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link href="/" className="relative w-12 h-12 flex-shrink-0">
               <Image
                 src="/images/Hoop 1.png"
                 alt="HOOP"
@@ -152,9 +152,9 @@ export default function DashboardPage() {
                 className="object-contain"
               />
             </Link>
-            <div>
-              <h1 className="font-display font-bold chrome-text-subtle">{t.welcome}, {userData.name}</h1>
-              <p className="text-sm text-muted-foreground">{userData.email}</p>
+            <div className="min-w-0">
+              <h1 className="font-display font-bold chrome-text-subtle truncate">{t.welcome}, {userData.name}</h1>
+              <p className="text-sm text-muted-foreground truncate">{userData.email}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

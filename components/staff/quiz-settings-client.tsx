@@ -3,7 +3,8 @@
 import { useState } from "react"
 import { useLanguage } from "@/components/providers"
 import { motion } from "framer-motion"
-import { Plus, Save, Trash2, Settings, BrainCircuit, Users, ToggleLeft, ToggleRight, Loader2, X } from "lucide-react"
+import { Plus, Save, Trash2, Settings, BrainCircuit, Users, ToggleLeft, ToggleRight, Loader2, X, ClipboardList, ArrowRight } from "lucide-react"
+import Link from "next/link"
 import { toast } from "sonner"
 
 type Question = {
@@ -219,7 +220,7 @@ export function QuizSettingsClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold flex items-center gap-2">
             <BrainCircuit className="h-6 w-6 text-primary" />
@@ -229,6 +230,14 @@ export function QuizSettingsClient({
             {t("manageQuizQuestions")}
           </p>
         </div>
+        <Link
+          href="/staff/quiz/surveys"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-card text-sm font-medium hover:bg-secondary transition-colors"
+        >
+          <ClipboardList className="h-4 w-4 text-primary" />
+          {lang === "th" ? "ตั้งค่าแบบสำรวจ" : "Survey Settings"}
+          <ArrowRight className="h-4 w-4" />
+        </Link>
       </div>
 
       <div className="flex gap-4 p-4 rounded-xl border border-border bg-card">

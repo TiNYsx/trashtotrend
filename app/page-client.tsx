@@ -83,9 +83,9 @@ export default function HomeClient() {
 
       <div className="relative z-10 flex min-h-dvh flex-col">
         {/* Header */}
-        <header className="flex items-center justify-between px-6 py-5">
-          <Link href="/" className="group">
-            <div className="relative w-14 h-14">
+        <header className="flex items-center justify-between px-4 py-4 sm:px-6 sm:py-5">
+          <Link href="/" className="group flex-shrink-0">
+            <div className="relative w-12 h-12 sm:w-14 sm:h-14">
               <Image
                 src="/images/Hoop 1.png"
                 alt="HOOP"
@@ -95,17 +95,17 @@ export default function HomeClient() {
               />
             </div>
           </Link>
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3 sm:gap-5">
             <LanguageToggle />
             <Link
               href="/login"
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground hover:opacity-80"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground hover:opacity-80 whitespace-nowrap"
             >
               {t.login}
             </Link>
             <Link
               href="/staff/login"
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground hover:opacity-80"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground hover:opacity-80 whitespace-nowrap"
             >
               {t.staffPortal}
             </Link>
@@ -113,22 +113,21 @@ export default function HomeClient() {
         </header>
 
         {/* Hero Section */}
-        <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-          <div className="text-center max-w-lg mx-auto space-y-10">
+        <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:px-6 sm:py-12">
+          <div className="text-center max-w-lg mx-auto space-y-6 sm:space-y-10">
             {/* Hoop Logo Image */}
             <div className="relative mx-auto animate-fade-in-up" style={{ animationDelay: '0s' }}>
-              <div className="relative w-72 h-72 mx-auto">
+              <div className="relative w-48 h-48 sm:w-64 sm:h-64 md:w-72 md:h-72 mx-auto">
                 <Image
                   src="/images/Hoop main.png"
                   alt="HOOP"
-                  width={288}
-                  height={288}
+                  fill
                   className="object-contain drop-shadow-2xl"
                   priority
                 />
               </div>
               {/* Glow effect behind logo */}
-              <div className="absolute inset-0 -z-10 mx-auto w-96 h-96 rounded-full" style={{
+              <div className="absolute inset-0 -z-10 mx-auto w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 rounded-full" style={{
                 background: 'radial-gradient(circle, rgba(192, 192, 192, 0.2) 0%, transparent 70%)',
                 filter: 'blur(40px)'
               }} />
@@ -176,8 +175,8 @@ export default function HomeClient() {
         </div>
 
         {/* Feature Cards */}
-        <div className="px-6 pb-12">
-          <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto">
+        <div className="px-4 pb-8 sm:px-6 sm:pb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-lg mx-auto">
             <FeatureCard
               icon={<QrCode className="h-5 w-5" />}
               title={t.scanCollect}
@@ -200,8 +199,8 @@ export default function HomeClient() {
         </div>
 
         {/* Footer */}
-        <footer className="px-6 py-6 text-center">
-          <p className="text-xs text-muted-foreground/50">
+        <footer className="px-4 py-4 sm:px-6 sm:py-6 text-center">
+          <p className="text-xs text-muted-foreground/50 break-words">
             {t.footer}
           </p>
         </footer>
@@ -229,8 +228,8 @@ function FeatureCard({
       <div className="flex justify-center mb-2 text-primary group-hover:scale-110 transition-transform duration-300">
         {icon}
       </div>
-      <h3 className="font-semibold text-sm mb-1 text-primary">{title}</h3>
-      <p className="text-xs text-muted-foreground">{description}</p>
+      <h3 className="font-semibold text-sm mb-1 text-primary break-words">{title}</h3>
+      <p className="text-xs text-muted-foreground break-words">{description}</p>
     </div>
   )
 }
