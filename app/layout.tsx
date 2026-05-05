@@ -13,6 +13,15 @@ const dbHelvethaica = localFont({
 export const metadata: Metadata = {
   title: "HOOP - From Trash to Trend",
   description: "Experience the transformation of aluminium from waste to worth. Join our circular economy journey.",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon-dark-32x32.png", type: "image/png", sizes: "32x32" },
+    ],
+    apple: [
+      { url: "/apple-icon.png", type: "image/png" },
+    ],
+  },
 }
 
 export const viewport: Viewport = {
