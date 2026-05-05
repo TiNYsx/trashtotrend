@@ -90,12 +90,7 @@ export default function PhotobookCarousel() {
             {photobookImages.map((image, index) => (
               <div
                 key={index}
-                className={cn(
-                  'flex-shrink-0 flex-grow-0 pl-4 first:pl-0',
-                  image.span === 'single'
-                    ? 'basis-[85%] sm:basis-[60%] md:basis-[45%]'
-                    : 'basis-[95%] sm:basis-[80%] md:basis-[70%]'
-                )}
+                className='flex-shrink-0 flex-grow-0 pl-4 first:pl-0 basis-[95%] sm:basis-[80%] md:basis-[70%]'
               >
                 <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-muted/50">
                   <Image

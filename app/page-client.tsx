@@ -38,31 +38,23 @@ export default function HomeClient() {
 
   return (
     <main className="relative min-h-dvh overflow-hidden">
-      {/* Video Hero Section */}
-      <section className="relative w-full h-[100dvh] overflow-hidden">
+      {/* Faded Video Background */}
+      <div className="fixed inset-0 z-0">
         <video
           autoPlay
           muted
           loop
           playsInline
-          className="absolute inset-0 w-full h-full object-cover"
+          className="w-full h-full object-cover opacity-15"
           poster="/images/photobook/1st.jpg"
         >
           <source src="/images/photobook/photobook.mp4" type="video/mp4" />
         </video>
-        
-        {/* Video overlay gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/40" />
-        
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
-          <span className="text-white/80 text-sm font-medium">Scroll to explore</span>
-          <ArrowRight className="h-5 w-5 text-white/80 rotate-90" />
-        </div>
-      </section>
+        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background/80" />
+      </div>
 
       {/* Animated Background */}
-      <div className="absolute inset-0 gradient-bg" style={{ top: '100dvh' }}>
+      <div className="absolute inset-0 gradient-bg">
         {/* Chrome gradient overlay */}
         <div className="absolute inset-0 opacity-40" style={{
           background: 'radial-gradient(ellipse at 50% 0%, rgba(192, 192, 192, 0.15) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(128, 128, 128, 0.1) 0%, transparent 40%)'
