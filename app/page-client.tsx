@@ -45,12 +45,12 @@ export default function HomeClient() {
           muted
           loop
           playsInline
-          className="w-full h-full object-cover opacity-10"
+          className="w-full h-full object-cover"
           poster="/images/photobook/1st.jpg"
         >
           <source src="/images/photobook/photobook.mp4" type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/90" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60" />
       </div>
 
       {/* Animated Background */}
