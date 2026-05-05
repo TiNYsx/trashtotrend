@@ -45,12 +45,12 @@ export default function HomeClient() {
           muted
           loop
           playsInline
-          className="w-full h-full object-cover opacity-15"
+          className="w-full h-full object-cover opacity-10"
           poster="/images/photobook/1st.jpg"
         >
           <source src="/images/photobook/photobook.mp4" type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background/80" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/60 to-background/90" />
       </div>
 
       {/* Animated Background */}
@@ -130,7 +130,7 @@ export default function HomeClient() {
 
         {/* Hero Section */}
         <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:px-6 sm:py-12">
-          <div className="text-center max-w-lg mx-auto space-y-6 sm:space-y-10">
+          <div className="text-center max-w-lg mx-auto space-y-6 sm:space-y-10 bg-background/70 backdrop-blur-sm rounded-3xl p-6 sm:p-10 shadow-lg">
             {/* Hoop Logo Image */}
             <div className="relative mx-auto animate-fade-in-up" style={{ animationDelay: '0s' }}>
               <div className="relative w-48 h-48 sm:w-64 sm:h-64 md:w-72 md:h-72 mx-auto">
