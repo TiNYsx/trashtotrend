@@ -92,14 +92,10 @@ ALTER TABLE quiz_responses ADD COLUMN IF NOT EXISTS booth_id INTEGER REFERENCES 
 ALTER TABLE quiz_responses ADD COLUMN IF NOT EXISTS is_correct BOOLEAN DEFAULT false;
 
 -- Add customer_id, booth_id to scan_events (if missing)
--- Note: This creates a separate scan_events table for customer scans
--- If scan_events doesn't exist yet, create it
-CREATE TABLE IF NOT EXISTS scan_events (
-  id SERIAL PRIMARY KEY,
-  customer_id INTEGER NOT NULL,
-  booth_id INTEGER NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Note: scan_events may already exist from 001-create-tables.sql with different columns
+-- We add the missing columns rather than recreating the table
+ALTER TABLE scan_events ADD COLUMN IF NOT EXISTS customer_id INTEGER;
+ALTER TABLE scan_events ADD COLUMN IF NOT EXISTS booth_id INTEGER;
 
 -- Add any missing columns to customers table (if they existed before)
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS ice_bath_registered BOOLEAN DEFAULT false;
