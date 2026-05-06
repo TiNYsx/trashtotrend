@@ -41,7 +41,7 @@ export default function RootLayout({
     <html lang="th">
       <body className={`${dbHelvethaica.variable} font-sans antialiased`}>
         <Providers>{children}</Providers>
-        <Analytics />
+        {process.env.VERCEL_URL && <Analytics />}
       </body>
     </html>
   )
