@@ -24,7 +24,7 @@ export default function HomeClient() {
     scanCollect: lang === 'th' ? 'สแกนและสะสม' : 'Scan & Collect',
     scanDesc: lang === 'th' ? 'เช็คอินที่บูธ' : 'Check in at booths',
     earnRewards: lang === 'th' ? 'รับรางวัล' : 'Earn Rewards',
-    rewardsDesc: lang === 'th' ? 'ทำ миссияทั้งหมด' : 'Complete all missions',
+    rewardsDesc: lang === 'th' ? 'ทำภารกิจทั้งหมด' : 'Complete all missions',
     joinLoop: lang === 'th' ? 'เข้าร่วมวงจร' : 'Join the Loop',
     loopDesc: lang === 'th' ? 'เศรษฐกิจหมุนเวียน' : 'Circular economy',
     bringCan: lang === 'th' ? 'อย่าลืม: นำกระป๋องอะลูมิเนียมของคุณมาเพื่อเข้าร่วม' : 'Remember: Bring your own aluminium can to participate',
@@ -115,13 +115,15 @@ export default function HomeClient() {
             <LanguageToggle />
             <Link
               href="/login"
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground hover:opacity-80 whitespace-nowrap"
+              className="text-sm text-foreground font-medium transition-colors hover:text-primary hover:opacity-80 whitespace-nowrap drop-shadow-sm"
+              style={{ textShadow: '0 1px 2px rgba(255,255,255,0.7)' }}
             >
               {t.login}
             </Link>
             <Link
               href="/staff/login"
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground hover:opacity-80 whitespace-nowrap"
+              className="text-sm text-foreground font-medium transition-colors hover:text-primary hover:opacity-80 whitespace-nowrap drop-shadow-sm"
+              style={{ textShadow: '0 1px 2px rgba(255,255,255,0.7)' }}
             >
               {t.staffPortal}
             </Link>
@@ -150,7 +152,7 @@ export default function HomeClient() {
             </div>
 
             {/* Description */}
-            <p className="text-muted-foreground text-base leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+            <p className="text-foreground text-lg leading-relaxed font-medium animate-fade-in-up drop-shadow-sm" style={{ animationDelay: '0.2s', textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}>
               {t.description}
             </p>
 
@@ -184,7 +186,7 @@ export default function HomeClient() {
             </div>
 
             {/* Requirement Notice */}
-            <p className="text-xs text-muted-foreground/70 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+            <p className="text-sm text-foreground font-medium animate-fade-in-up drop-shadow-sm" style={{ animationDelay: '0.4s', textShadow: '0 1px 2px rgba(255,255,255,0.7)' }}>
               {t.bringCan}
             </p>
           </div>
@@ -223,7 +225,7 @@ export default function HomeClient() {
 
         {/* Footer */}
         <footer className="px-4 py-4 sm:px-6 sm:py-6 text-center">
-          <p className="text-xs text-muted-foreground/50 break-words">
+          <p className="text-sm text-foreground font-medium break-words drop-shadow-sm" style={{ textShadow: '0 1px 2px rgba(255,255,255,0.6)' }}>
             {t.footer}
           </p>
         </footer>
@@ -251,8 +253,8 @@ function FeatureCard({
       <div className="flex justify-center mb-2 text-primary group-hover:scale-110 transition-transform duration-300">
         {icon}
       </div>
-      <h3 className="font-semibold text-sm mb-1 text-primary break-words">{title}</h3>
-      <p className="text-xs text-muted-foreground break-words">{description}</p>
+      <h3 className="font-bold text-base mb-1 text-primary break-words">{title}</h3>
+      <p className="text-sm text-foreground font-medium break-words drop-shadow-sm" style={{ textShadow: '0 1px 2px rgba(255,255,255,0.7)' }}>{description}</p>
     </div>
   )
 }
