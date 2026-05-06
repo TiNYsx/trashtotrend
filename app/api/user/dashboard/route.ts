@@ -11,8 +11,8 @@ export async function GET() {
     }
     
     const userResult = await query(
-      `SELECT name, email, qr_token, quiz_type, pre_survey_completed, post_survey_completed, reward_claimed 
-       FROM users WHERE id = $1`,
+      `SELECT id, email, qr_token, registration_data, pre_survey_completed, post_survey_completed
+       FROM customers WHERE id = $1`,
       [session.id]
     )
 
@@ -44,13 +44,13 @@ export async function GET() {
     const completedCount = boothsResult.filter(b => b.completed).length
 
     return NextResponse.json({
-      name: user.name,
+      name: user.email,
       email: user.email,
       qr_token: user.qr_token,
-      quiz_type: user.quiz_type,
+      quiz_type: null,
       pre_survey_completed: user.pre_survey_completed,
       post_survey_completed: user.post_survey_completed,
-      reward_claimed: user.reward_claimed,
+      reward_claimed: false,
       checkpoints: boothsResult,
       checkpoint_count: completedCount,
       total_checkpoints: boothsResult.length

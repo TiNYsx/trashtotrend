@@ -15,20 +15,20 @@ export async function POST(req: Request) {
   }
 
   try {
-    // Find user by QR token
-    const user = await getOne<{ id: number; name: string; email: string }>(
-      "SELECT id, name, email FROM users WHERE qr_token = $1",
+    // Find customer by QR token
+    const customer = await getOne<{ id: number; name: string; email: string }>(
+      "SELECT id, email as name FROM customers WHERE qr_token = $1",
       [qr_token]
     )
 
-    if (!user) {
+    if (!customer) {
       return NextResponse.json({ error: "Invalid QR code" }, { status: 404 })
     }
 
     // Check if already stamped
     const existing = await getOne(
       "SELECT id FROM stamps WHERE customer_id = $1 AND booth_id = $2",
-      [user.id, booth_id]
+      [customer.id, booth_id]
     )
 
     if (existing) {
@@ -38,22 +38,14 @@ export async function POST(req: Request) {
     // Create stamp for the customer
     await query(
       "INSERT INTO stamps (customer_id, booth_id, scanned_by_staff_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
-      [user.id, booth_id, session.id]
+      [customer.id, booth_id, session.id]
     )
 
     // record a scan event for the customer so frontend can redirect to quiz
     try {
       await query(
-        `CREATE TABLE IF NOT EXISTS scan_events (
-          id SERIAL PRIMARY KEY,
-          customer_id INTEGER NOT NULL,
-          booth_id INTEGER NOT NULL,
-          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-        )`
-      )
-      await query(
         "INSERT INTO scan_events (customer_id, booth_id) VALUES ($1, $2)",
-        [user.id, booth_id]
+        [customer.id, booth_id]
       )
     } catch {
       // ignore event creation errors
@@ -61,12 +53,12 @@ export async function POST(req: Request) {
 
     // regenerate QR token to prevent reuse
     const newToken = generateQRToken()
-    await query("UPDATE users SET qr_token = $1 WHERE id = $2", [newToken, user.id])
+    await query("UPDATE customers SET qr_token = $1 WHERE id = $2", [newToken, customer.id])
 
     return NextResponse.json({
       success: true,
-      customer_id: user.id,
-      customer_email: user.email,
+      customer_id: customer.id,
+      customer_email: customer.name,
       booth_id,
       quiz_url: `/stamps/quiz/${booth_id}`,
     })
