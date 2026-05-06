@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { query, getOne } from '@/lib/db'
 import { createSession, generateQRToken } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
 
@@ -15,41 +15,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
     }
 
-    if (surveyAnswers.length !== 8) {
-      return NextResponse.json({ error: 'Survey must be completed' }, { status: 400 })
+    // Check if email already exists
+    const existingUser = await getOne('SELECT id FROM customers WHERE email = $1', [email])
+    if (existingUser) {
+      return NextResponse.json({ error: 'Email already registered' }, { status: 400 })
     }
 
     const passwordHash = await bcrypt.hash(password, 10)
     const qrToken = generateQRToken()
-
-    const existingUser = await query('SELECT id FROM users WHERE email = $1', [email])
-    if (existingUser.rows.length > 0) {
-      return NextResponse.json({ error: 'Email already registered' }, { status: 400 })
-    }
+    const regData = JSON.stringify({ name, age, gender, contact })
 
     const result = await query(
-      `INSERT INTO users (email, password_hash, name, age, gender, contact, qr_token, registration_data, pre_survey_completed) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true) 
+      `INSERT INTO customers (email, password_hash, qr_token, registration_data, pre_survey_completed) 
+       VALUES ($1, $2, $3, $4, true) 
        RETURNING id`,
-      [email, passwordHash, name, age, gender, contact, qrToken, JSON.stringify({ name, age, gender, contact })]
+      [email, passwordHash, qrToken, regData]
     )
 
-    const userId = result.rows[0].id
+    const customerId = result.rows[0].id
 
-    for (const answer of surveyAnswers) {
-      await query(
-        'INSERT INTO pre_survey_responses (user_id, question_num, score) VALUES ($1, $2, $3)',
-        [userId, answer.questionNum, answer.score]
-      )
+    // Save survey answers if provided
+    if (surveyAnswers && Array.isArray(surveyAnswers)) {
+      for (const answer of surveyAnswers) {
+        await query(
+          'INSERT INTO pre_survey_responses (user_id, question_num, score) VALUES ($1, $2, $3)',
+          [customerId, answer.questionNum, answer.score]
+        )
+      }
     }
 
     await createSession({
-      id: userId,
-      role: 'user',
+      id: customerId,
+      role: 'customer',
       email
     })
 
-    return NextResponse.json({ success: true, userId })
+    return NextResponse.json({ success: true, customerId })
   } catch (error) {
     console.error('Registration failed:', error)
     return NextResponse.json({ error: 'Registration failed' }, { status: 500 })
