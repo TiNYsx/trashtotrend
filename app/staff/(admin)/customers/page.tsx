@@ -11,8 +11,6 @@ type Customer = {
   registration_data: Record<string, string>
   created_at: string
   stamp_count: string
-  ice_bath_registered: boolean | null
-  ice_bath_time: string | null
   pre_survey_completed: boolean | null
   post_survey_completed: boolean | null
 }
@@ -35,9 +33,8 @@ export default async function CustomersPage() {
 
   try {
     customers = await getMany<Customer>(`
-      SELECT 
+      SELECT
         c.id, c.email, c.registration_data, c.created_at,
-        c.ice_bath_registered, c.ice_bath_time,
         c.pre_survey_completed, c.post_survey_completed,
         COALESCE((SELECT COUNT(*) FROM stamps WHERE customer_id = c.id), 0)::text as stamp_count
       FROM customers c

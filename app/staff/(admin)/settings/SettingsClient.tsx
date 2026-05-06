@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Save, Snowflake, Calendar, Zap, Globe, Loader2 } from 'lucide-react'
+import { Save, Calendar, Zap, Globe, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Settings {
-  ice_bath_capacity: string
-  ice_bath_open_date: string
   event_date: string
   quiz_enabled: string
   home_title_en: string
@@ -24,8 +22,6 @@ interface Settings {
 
 export default function SettingsClient() {
   const [settings, setSettings] = useState<Settings>({
-    ice_bath_capacity: '50',
-    ice_bath_open_date: '2026-04-20',
     event_date: '2026-04-25',
     quiz_enabled: 'true',
     home_title_en: 'HOOP Creative Exhibition',
@@ -109,45 +105,6 @@ export default function SettingsClient() {
           Save Changes
         </button>
       </div>
-
-      {/* Ice Bath Settings */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass rounded-2xl p-6 space-y-6"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
-            <Snowflake className="h-5 w-5 text-accent" />
-          </div>
-          <div>
-            <h2 className="font-display text-xl font-bold">Ice Bath</h2>
-            <p className="text-sm text-muted-foreground">Configure ice bath registration settings</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Capacity</label>
-            <input
-              type="number"
-              value={settings.ice_bath_capacity}
-              onChange={(e) => handleChange('ice_bath_capacity', e.target.value)}
-              className="w-full h-11 px-4 rounded-xl bg-secondary/50 border border-border focus:border-primary focus:outline-none"
-              min="1"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Open Date</label>
-            <input
-              type="date"
-              value={settings.ice_bath_open_date}
-              onChange={(e) => handleChange('ice_bath_open_date', e.target.value)}
-              className="w-full h-11 px-4 rounded-xl bg-secondary/50 border border-border focus:border-primary focus:outline-none"
-            />
-          </div>
-        </div>
-      </motion.div>
 
       {/* Event Settings */}
       <motion.div

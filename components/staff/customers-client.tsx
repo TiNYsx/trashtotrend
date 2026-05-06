@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useLanguage } from "@/components/providers"
-import { Users, ArrowLeft, Search, CheckCircle, XCircle, Snowflake, ClipboardCheck, Loader2 } from "lucide-react"
+import { Users, ArrowLeft, Search, CheckCircle, XCircle, ClipboardCheck, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 type Customer = {
@@ -12,8 +12,6 @@ type Customer = {
   registration_data: Record<string, string>
   created_at: string
   stamp_count: string
-  ice_bath_registered: boolean | null
-  ice_bath_time: string | null
   pre_survey_completed: boolean | null
   post_survey_completed: boolean | null
 }
@@ -105,9 +103,7 @@ export function CustomersClient({ customers, booths }: { customers: Customer[], 
       })
       
       if (res.ok) {
-        if (field === 'ice_bath_registered') {
-          selectedCustomer.ice_bath_registered = value
-        } else if (field === 'pre_survey_completed') {
+        if (field === 'pre_survey_completed') {
           selectedCustomer.pre_survey_completed = value
         } else if (field === 'post_survey_completed') {
           selectedCustomer.post_survey_completed = value
@@ -173,9 +169,6 @@ export function CustomersClient({ customers, booths }: { customers: Customer[], 
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
-                  {c.ice_bath_registered ? (
-                    <Snowflake className="h-4 w-4 text-blue-400" />
-                  ) : null}
                   {c.pre_survey_completed ? (
                     <ClipboardCheck className="h-4 w-4 text-green-400" />
                   ) : null}
@@ -197,31 +190,6 @@ export function CustomersClient({ customers, booths }: { customers: Customer[], 
             </div>
 
             <div className="space-y-4">
-              {/* Ice Bath */}
-              <div className="p-4 rounded-xl border border-border bg-secondary/30">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Snowflake className="h-5 w-5 text-blue-400" />
-                    <span className="font-medium">Ice Bath</span>
-                  </div>
-                  <button
-                    onClick={() => handleToggleField('ice_bath_registered', !selectedCustomer.ice_bath_registered)}
-                    disabled={isSaving}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${
-                      selectedCustomer.ice_bath_registered 
-                        ? "bg-blue-500 text-white" 
-                        : "bg-secondary text-muted-foreground"
-                    }`}
-                  >
-                    {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {selectedCustomer.ice_bath_registered 
-                      ? (lang === "th" ? "ลงทะเบียนแล้ว" : "Registered")
-                      : (lang === "th" ? "ยังไม่ลงทะเบียน" : "Not Registered")
-                    }
-                  </button>
-                </div>
-              </div>
-
               {/* Pre-Survey */}
               <div className="p-4 rounded-xl border border-border bg-secondary/30">
                 <div className="flex items-center justify-between">

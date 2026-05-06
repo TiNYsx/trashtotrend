@@ -17,18 +17,10 @@ export async function POST(
   try {
     const { field, value } = await request.json()
     
-    let updateColumn = field
-    if (field === 'ice_bath_registered') {
-      await query(
-        "UPDATE customers SET ice_bath_registered = $1, ice_bath_time = $2 WHERE id = $3",
-        [value, value ? new Date().toISOString() : null, customerId]
-      )
-    } else {
-      await query(
-        "UPDATE customers SET " + field + " = $1 WHERE id = $2",
-        [value, customerId]
-      )
-    }
+    await query(
+      "UPDATE customers SET " + field + " = $1 WHERE id = $2",
+      [value, customerId]
+    )
     
     return NextResponse.json({ success: true })
   } catch (error) {

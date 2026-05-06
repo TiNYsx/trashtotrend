@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { LanguageToggle } from "@/components/language-toggle"
@@ -9,12 +10,21 @@ import {
   ArrowRight, 
   QrCode, 
   Trophy, 
-  MapPin,
-  Zap
+  MapPin
 } from "lucide-react"
 
 export default function HomeClient() {
   const { lang } = useLanguage()
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (video) {
+      video.play().catch(() => {
+        // Autoplay was prevented, will try again on user interaction
+      })
+    }
+  }, [])
 
   const t = {
     login: lang === 'th' ? 'เข้าสู่ระบบ' : 'Login',
@@ -41,6 +51,7 @@ export default function HomeClient() {
       {/* Faded Video Background */}
       <div className="fixed inset-0 z-0">
         <video
+          ref={videoRef}
           autoPlay
           muted
           loop
@@ -167,20 +178,13 @@ export default function HomeClient() {
                 <div className="absolute inset-0 rounded-xl animate-chrome-shine" />
               </Link>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div>
                 <Link
                   href="/about"
                   className="flex h-12 items-center justify-center gap-2 rounded-xl chrome-border glass font-medium transition-all hover:bg-secondary/30"
                 >
                   <MapPin className="h-4 w-4 text-primary" />
                   {t.explore}
-                </Link>
-                <Link
-                  href="/ice-bath"
-                  className="flex h-12 items-center justify-center gap-2 rounded-xl chrome-border glass font-medium transition-all hover:bg-secondary/30 group"
-                >
-                  <Zap className="h-4 w-4 text-accent" />
-                  <span className="text-accent">Ice Bath</span>
                 </Link>
               </div>
             </div>

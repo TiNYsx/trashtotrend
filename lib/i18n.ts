@@ -126,7 +126,6 @@ export const dict = {
   descEn: { en: "Description (English)", th: "คำอธิบาย (ภาษาอังกฤษ)" },
   descTh: { en: "Description (Thai)", th: "คำอธิบาย (ภาษาไทย)" },
   searchCustomers: { en: "Search customers...", th: "ค้นหาลูกค้า..." },
-  iceBath: { en: "Ice Bath", th: "ไอซ์บาท" },
   preSurveyTab: { en: "Pre-Survey", th: "แบบสำรวจก่อนงาน" },
   postSurveyTab: { en: "Post-Survey", th: "แบบสำรวจหลังงาน" },
   surveyQuestions: { en: "Survey Questions", th: "คำถามแบบสำรวจ" },
