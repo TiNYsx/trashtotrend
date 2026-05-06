@@ -124,8 +124,14 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
     }
   }, [scanning])
 
-  const handleScan = async (qrToken: string) => {
+  const handleScan = async (decodedText: string) => {
     if (!selectedCheckpoint) return
+
+    // Extract token from URL if full URL is scanned
+    let qrToken = decodedText
+    if (decodedText.includes('/scan/')) {
+      qrToken = decodedText.split('/scan/')[1]
+    }
 
     try {
       const res = await fetch("/api/scan", {

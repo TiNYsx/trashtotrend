@@ -83,7 +83,7 @@ export default function DashboardPage() {
       setUserData(data)
       
       if (data.qr_token) {
-        const url = await QRCode.toDataURL(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://hoop.exhibition'}/scan/${data.qr_token}`, {
+        const url = await QRCode.toDataURL(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://trashtotrend.life'}/scan/${data.qr_token}`, {
           width: 300,
           margin: 2,
           color: { dark: '#ffffff', light: '#0a0a0f' }

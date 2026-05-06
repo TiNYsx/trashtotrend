@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/db'
-import { createSession } from '@/lib/auth'
+import { createSession, generateQRToken } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
@@ -54,14 +54,4 @@ export async function POST(request: NextRequest) {
     console.error('Registration failed:', error)
     return NextResponse.json({ error: 'Registration failed' }, { status: 500 })
   }
-}
-
-function generateQRToken(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  const timestamp = Date.now().toString(36)
-  let random = ''
-  for (let i = 0; i < 24; i++) {
-    random += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return `hoop_${timestamp}_${random}`
 }
