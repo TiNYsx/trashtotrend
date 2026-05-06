@@ -15,20 +15,20 @@ export async function POST(req: Request) {
   }
 
   try {
-    // Find customer by QR token
-    const customer = await getOne<{ id: number; email: string }>(
-      "SELECT id, email FROM customers WHERE qr_token = $1",
+    // Find user by QR token
+    const user = await getOne<{ id: number; name: string; email: string }>(
+      "SELECT id, name, email FROM users WHERE qr_token = $1",
       [qr_token]
     )
 
-    if (!customer) {
+    if (!user) {
       return NextResponse.json({ error: "Invalid QR code" }, { status: 404 })
     }
 
     // Check if already stamped
     const existing = await getOne(
       "SELECT id FROM stamps WHERE customer_id = $1 AND booth_id = $2",
-      [customer.id, booth_id]
+      [user.id, booth_id]
     )
 
     if (existing) {
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
       )
       await query(
         "INSERT INTO scan_events (customer_id, booth_id) VALUES ($1, $2)",
-        [customer.id, booth_id]
+        [user.id, booth_id]
       )
     } catch {
       // ignore event creation errors
@@ -55,12 +55,12 @@ export async function POST(req: Request) {
 
     // regenerate QR token to prevent reuse
     const newToken = generateQRToken()
-    await query("UPDATE customers SET qr_token = $1 WHERE id = $2", [newToken, customer.id])
+    await query("UPDATE users SET qr_token = $1 WHERE id = $2", [newToken, user.id])
 
     return NextResponse.json({
       success: true,
-      customer_id: customer.id,
-      customer_email: customer.email,
+      customer_id: user.id,
+      customer_email: user.email,
       booth_id,
       quiz_url: `/stamps/quiz/${booth_id}`,
     })

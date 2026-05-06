@@ -33,7 +33,7 @@ export default async function StampsPage() {
       [session.id]
     )
     const customer = await getOne<{ qr_token: string }>(
-      "SELECT qr_token FROM customers WHERE id = $1",
+      "SELECT qr_token FROM users WHERE id = $1",
       [session.id]
     )
     qrToken = customer?.qr_token || ""

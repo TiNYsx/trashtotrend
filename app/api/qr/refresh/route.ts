@@ -11,7 +11,7 @@ export async function POST() {
   const newToken = generateQRToken()
 
   try {
-    await query("UPDATE customers SET qr_token = $1 WHERE id = $2", [newToken, session.id])
+    await query("UPDATE users SET qr_token = $1 WHERE id = $2", [newToken, session.id])
     return NextResponse.json({ token: newToken })
   } catch {
     return NextResponse.json({ token: "", error: "Failed to refresh" }, { status: 500 })
