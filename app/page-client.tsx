@@ -247,7 +247,7 @@ function FeatureCard({
 }) {
   return (
     <div 
-      className="group rounded-xl p-4 text-center transition-all hover:bg-secondary/20 animate-fade-in-up chrome-border glass"
+      className="group rounded-xl p-4 text-center transition-all animate-fade-in-up chrome-border bg-background/95 backdrop-blur-sm border border-border hover:bg-background/50 hover:backdrop-blur-md"
       style={{ animationDelay: `${delay}s` }}
     >
       <div className="flex justify-center mb-2 text-primary group-hover:scale-110 transition-transform duration-300">
