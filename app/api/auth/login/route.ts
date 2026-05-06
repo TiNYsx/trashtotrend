@@ -12,8 +12,9 @@ export async function POST(request: NextRequest) {
     }
 
     const table = role === 'staff' ? 'staff' : 'users'
+    const identifierColumn = role === 'staff' ? 'username' : 'email'
     const result = await query(
-      `SELECT id, email, password_hash, '${role}' as role FROM ${table} WHERE email = $1`,
+      `SELECT id, ${identifierColumn} as email, password_hash, '${role}' as role FROM ${table} WHERE ${identifierColumn} = $1`,
       [email]
     )
 

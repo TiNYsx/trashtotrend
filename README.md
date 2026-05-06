@@ -71,11 +71,8 @@ Ice Bath    Checkpoints   Reward
 # Install dependencies
 npm install
 
-# Set up database
-psql -U postgres -d your_database -f scripts/001-create-tables.sql
-psql -U postgres -d your_database -f scripts/002-seed-data.sql
-psql -U postgres -d your_database -f scripts/003-update-quiz-survey-schema.sql
-psql -U postgres -d your_database -f scripts/004-create-booths-and-related-tables.sql
+# Set up database (production - run ONCE)
+psql -U postgres -d your_database -f scripts/production-migration.sql
 
 # Configure environment
 cp .env.example .env.local
@@ -86,6 +83,32 @@ npm run dev
 
 # Build for production
 npm run build
+npm run start
+```
+
+## Production Deployment
+
+```bash
+# 1. Install dependencies
+npm ci --production
+
+# 2. Run production database migration (safe to run multiple times)
+psql -U postgres -d your_database -f scripts/production-migration.sql
+
+# 3. Set environment variables
+export DATABASE_URL=postgresql://user:password@localhost:5432/your_database
+export SESSION_SECRET=your-32-character-secret-key
+export NODE_ENV=production
+export NEXT_PUBLIC_BASE_URL=https://your-domain.com
+
+# 4. Build the application
+npm run build
+
+# 5. Start the server
+npm run start
+
+# Or with PM2
+npx pm2 start npm --name "trashtotrend" -- run start
 ```
 
 ## Environment Variables

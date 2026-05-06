@@ -43,12 +43,13 @@ export async function createQuizQuestion(formData: FormData) {
 
   try {
     await query(
-      "INSERT INTO quiz_questions (booth_id, question_en, question_th, question_type, options, correct_answer, display_order) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-      [booth_id, question_en, question_th, question_type, options ? JSON.stringify(options) : null, correct_answer || null, display_order]
+      "INSERT INTO quiz_questions (booth_id, question_en, question_th, question_type, options, correct_answer, display_order, quiz_category) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+      [booth_id, question_en, question_th, question_type, options ? JSON.stringify(options) : null, correct_answer || null, display_order, "booth"]
     )
     revalidatePath(`/staff/booths/${booth_id}/quiz`)
     return { success: true }
-  } catch {
+  } catch (err) {
+    console.error("Failed to create quiz question:", err)
     return { error: "Failed to create question" }
   }
 }
@@ -76,12 +77,13 @@ export async function updateQuizQuestion(formData: FormData) {
 
   try {
     await query(
-      "UPDATE quiz_questions SET question_en=$1, question_th=$2, question_type=$3, options=$4, correct_answer=$5, display_order=$6, is_active=$7 WHERE id=$8",
-      [question_en, question_th, question_type, options ? JSON.stringify(options) : null, correct_answer || null, display_order, is_active, id]
+      "UPDATE quiz_questions SET question_en=$1, question_th=$2, question_type=$3, options=$4, correct_answer=$5, display_order=$6, is_active=$7, quiz_category=$8 WHERE id=$9",
+      [question_en, question_th, question_type, options ? JSON.stringify(options) : null, correct_answer || null, display_order, is_active, "booth", id]
     )
     revalidatePath(`/staff/booths/${booth_id}/quiz`)
     return { success: true }
-  } catch {
+  } catch (err) {
+    console.error("Failed to update quiz question:", err)
     return { error: "Failed to update question" }
   }
 }
