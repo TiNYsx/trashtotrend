@@ -35,6 +35,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Already stamped at this booth", alreadyStamped: true }, { status: 409 })
     }
 
+    // Create stamp for the customer
+    await query(
+      "INSERT INTO stamps (customer_id, booth_id, scanned_by_staff_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
+      [user.id, booth_id, session.id]
+    )
+
     // record a scan event for the customer so frontend can redirect to quiz
     try {
       await query(
