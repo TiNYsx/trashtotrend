@@ -74,6 +74,8 @@ npm install
 # Set up database
 psql -U postgres -d your_database -f scripts/001-create-tables.sql
 psql -U postgres -d your_database -f scripts/002-seed-data.sql
+psql -U postgres -d your_database -f scripts/003-update-quiz-survey-schema.sql
+psql -U postgres -d your_database -f scripts/004-create-booths-and-related-tables.sql
 
 # Configure environment
 cp .env.example .env.local
@@ -118,6 +120,8 @@ NEXT_PUBLIC_BASE_URL=https://your-domain.com
 | `/staff/login` | Staff login |
 | `/staff/dashboard` | Staff admin panel |
 | `/staff/scan` | QR checkpoint scanner |
+| `/staff/booths` | Booth management |
+| `/stamps` | Stamp collection |
 
 ## Database Schema
 
@@ -133,11 +137,35 @@ NEXT_PUBLIC_BASE_URL=https://your-domain.com
 - Slug-based identification
 - Duplicate prevention per user
 
+### Booths
+
+- Exhibition booths with bilingual names (EN/TH)
+- Linked to quiz questions and stamp collection
+- Display order and active/inactive status
+
+### Customers
+
+- Separate from users/participants
+- Email, QR token, registration data
+- Used for stamp collection system
+
+### Stamps
+
+- Stamp collection per customer per booth
+- Tracked by staff scanning
+- Unique constraint per customer-booth pair
+
 ### Surveys
 
 - Pre/post responses linked to user
 - 1-5 scale scoring
 - Research-ready data
+
+### Personality Types
+
+- 5 types: Creator, Observer, Achiever, Explorer, Restorer
+- Bilingual names and descriptions
+- Linked to quiz responses
 
 ## Design System
 
@@ -149,8 +177,6 @@ NEXT_PUBLIC_BASE_URL=https://your-domain.com
 ## TODO
 
 - **Markdown Support**: Add a markdown support and re-design the "About Us" part on setting page.
-- **Rework Quiz**: Add pre/post test setting + Add manual options-personality linking.
-- **Registeration Check**: Need to check if the email is used or not - right now the email can re-use.
 
 ## License
 

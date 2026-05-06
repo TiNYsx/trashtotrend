@@ -10,7 +10,7 @@ const config = {
   host: 'localhost',
   port: 5432,
   user: 'postgres',
-  password: '8br6JD9D6:*Ppk', // Decoded from 8br6JD9D6%3A%2APpk
+  password: '8br6JD9D6:*ADpk', // Decoded from 8br6JD9D6%3A%2ADpk
   database: 'from_trash_to_trend'
 };
 
@@ -36,6 +36,20 @@ async function setup() {
     const seed = fs.readFileSync(seedPath, 'utf8');
     await client.query(seed);
     console.log('✅ Data seeded!\n');
+
+    // Run schema updates (003)
+    console.log('🔄 Running schema updates...');
+    const updatePath = path.join(__dirname, '003-update-quiz-survey-schema.sql');
+    const update = fs.readFileSync(updatePath, 'utf8');
+    await client.query(update);
+    console.log('✅ Schema updated!\n');
+
+    // Create booths and related tables (004)
+    console.log('🏪 Creating booths and related tables...');
+    const boothsPath = path.join(__dirname, '004-create-booths-and-related-tables.sql');
+    const booths = fs.readFileSync(boothsPath, 'utf8');
+    await client.query(booths);
+    console.log('✅ Booths and related tables created!\n');
 
     console.log('🎉 Database setup complete!');
     
