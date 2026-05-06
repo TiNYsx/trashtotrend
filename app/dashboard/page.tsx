@@ -11,12 +11,12 @@ import QRCode from 'qrcode'
 
 interface Checkpoint {
   id: number
-  slug: string
   name_en: string
   name_th: string
   description_en: string
   description_th: string
-  type: string
+  image_url: string
+  display_order: number
   completed: boolean
 }
 
@@ -287,7 +287,7 @@ export default function DashboardPage() {
                       <CheckCircle className="h-5 w-5 text-primary" />
                     ) : (
                       <span className="text-sm font-bold text-muted-foreground">
-                        {idx + 1}
+                        {checkpoint.display_order}
                       </span>
                     )}
                   </div>

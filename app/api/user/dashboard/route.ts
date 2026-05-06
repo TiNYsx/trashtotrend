@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { query } from '@/lib/db'
+import { query, getMany } from '@/lib/db'
 import { requireCustomer } from '@/lib/auth'
 
 export async function GET() {
@@ -22,17 +22,26 @@ export async function GET() {
 
     const user = userResult.rows[0]
 
-    const checkpointsResult = await query(
-      `SELECT c.id, c.slug, c.name_en, c.name_th, c.type, 
-              CASE WHEN cc.id IS NOT NULL THEN true ELSE false END as completed
-       FROM checkpoints c
-       LEFT JOIN checkpoint_completions cc ON c.id = cc.checkpoint_id AND cc.user_id = $1
-       WHERE c.is_active = true
-       ORDER BY c.display_order`,
+    const boothsResult = await getMany<{
+      id: number
+      name_en: string
+      name_th: string
+      description_en: string
+      description_th: string
+      image_url: string
+      display_order: number
+      completed: boolean
+    }>(
+      `SELECT b.id, b.name_en, b.name_th, b.description_en, b.description_th, b.image_url, b.display_order,
+              CASE WHEN s.id IS NOT NULL THEN true ELSE false END as completed
+       FROM booths b
+       LEFT JOIN stamps s ON b.id = s.booth_id AND s.customer_id = $1
+       WHERE b.is_active = true
+       ORDER BY b.display_order`,
       [session.id]
     )
 
-    const completedCount = checkpointsResult.rows.filter(c => c.completed).length
+    const completedCount = boothsResult.filter(b => b.completed).length
 
     return NextResponse.json({
       name: user.name,
@@ -42,9 +51,9 @@ export async function GET() {
       pre_survey_completed: user.pre_survey_completed,
       post_survey_completed: user.post_survey_completed,
       reward_claimed: user.reward_claimed,
-      checkpoints: checkpointsResult.rows,
+      checkpoints: boothsResult,
       checkpoint_count: completedCount,
-      total_checkpoints: checkpointsResult.rows.length
+      total_checkpoints: boothsResult.length
     })
   } catch (error) {
     console.error('Failed to fetch dashboard:', error)
