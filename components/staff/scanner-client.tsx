@@ -128,10 +128,10 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
     if (!selectedCheckpoint) return
 
     try {
-      const res = await fetch("/api/checkpoint/scan", {
+      const res = await fetch("/api/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ qrToken, checkpointSlug: selectedCheckpoint.slug }),
+        body: JSON.stringify({ qr_token: qrToken, booth_id: parseInt(selectedCheckpoint.slug) }),
       })
 
       const data = await res.json()
@@ -140,13 +140,12 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
         setResult({
           type: "success",
           message: t("checkpointCompleted"),
-          userName: data.user,
-          progress: data.progress,
+          userName: data.customer_email,
         })
-      } else if (data.error === "Already completed") {
+      } else if (data.alreadyStamped) {
         setResult({
           type: "already",
-          message: `${data.user} ${lang === "th" ? "ประทับตราที่" : "already completed"} ${data.checkpoint}`
+          message: `${data.customer_email || ""} ${lang === "th" ? "ประทับตราที่บูธนี้แล้ว" : "already stamped at this booth"}`
         })
       } else {
         setResult({ type: "error", message: data.error || t("scanFailed") })
@@ -192,7 +191,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
           <div>
             <h1 className="font-display text-2xl font-bold text-foreground flex items-center gap-2">
               <MapPin className="h-5 w-5 text-primary" />
-              {t("scanCheckpoint")}
+              {t("scanBooth")}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {t("scanCustomerQR")}
@@ -207,7 +206,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
           </div>
         )}
 
-        {/* Step 1: Select checkpoint */}
+        {/* Step 1: Select booth */}
         {!selectedCheckpoint && (
           <motion.div
             className="w-full"
@@ -215,7 +214,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
             animate={{ opacity: 1, y: 0 }}
           >
             <p className="mb-4 text-center text-sm font-medium text-foreground">
-              {t("selectCheckpoint")}:
+              {t("selectBooth")}:
             </p>
             <div className="grid grid-cols-2 gap-3">
               {checkpoints.map((checkpoint, idx) => (
@@ -248,7 +247,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            {/* Checkpoint indicator */}
+            {/* Booth indicator */}
             <div className="flex items-center gap-2 rounded-full glass px-4 py-2">
               <MapPin className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-foreground">
@@ -318,14 +317,6 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
                   </p>
                   {result.userName && (
                     <p className="text-lg font-bold text-foreground">{result.userName}</p>
-                  )}
-                  {result.progress && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <Trophy className="h-4 w-4 text-accent" />
-                      <span className="text-sm text-muted-foreground">
-                        Progress: {result.progress.completed} / {result.progress.total}
-                      </span>
-                    </div>
                   )}
                 </motion.div>
               )}

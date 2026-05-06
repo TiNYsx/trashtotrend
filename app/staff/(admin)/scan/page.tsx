@@ -3,9 +3,8 @@ import { getMany } from "@/lib/db"
 import { requireStaff } from "@/lib/auth"
 import { ScannerClient } from "@/components/staff/scanner-client"
 
-type Checkpoint = {
+type Booth = {
   id: number
-  slug: string
   name_en: string
   name_th: string
 }
@@ -17,15 +16,15 @@ export default async function ScanPage() {
     redirect("/staff/login")
   }
   
-  let checkpoints: Checkpoint[] = []
+  let booths: Booth[] = []
 
   try {
-    checkpoints = await getMany<Checkpoint>(
-      "SELECT id, slug, name_en, name_th FROM checkpoints WHERE is_active = true ORDER BY display_order ASC"
+    booths = await getMany<Booth>(
+      "SELECT id, name_en, name_th FROM booths WHERE is_active = true ORDER BY display_order ASC"
     )
   } catch {
     // DB not connected
   }
 
-  return <ScannerClient checkpoints={checkpoints} />
+  return <ScannerClient checkpoints={booths.map(b => ({ id: b.id, slug: b.id.toString(), name_en: b.name_en, name_th: b.name_th }))} />
 }
