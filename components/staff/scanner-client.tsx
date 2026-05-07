@@ -103,106 +103,95 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
     }
   }, [selectedCheckpoint, lang, t])
 
+  const [debugLog, setDebugLog] = useState<string[]>([])
+  const addLog = (msg: string) => {
+    console.log(msg)
+    setDebugLog(prev => [msg, ...prev].slice(0, 5))
+  }
+
   useEffect(() => {
     if (!scanning) return
 
-    let html5QrCode: any = null
     let cancelled = false
+    let videoStream: MediaStream | null = null
+    let decodeInterval: NodeJS.Timeout | null = null
 
     const startScanner = async () => {
-      console.log("[Scanner] Attempting to start with Html5Qrcode...")
-      setCameraStatus(lang === "th" ? "กำลังเตรียมกล้อง..." : "Preparing camera...")
+      addLog("Starting ZXing Manual Scanner...")
       hasScannedRef.current = false
       
       try {
-        const { Html5Qrcode } = await import('html5-qrcode')
+        const { BrowserQRCodeReader } = await import('@zxing/library')
+        const codeReader = new BrowserQRCodeReader()
         
         if (cancelled) return
 
-        const elementId = "reader"
-        const element = document.getElementById(elementId)
-        if (!element) {
-          console.log("[Scanner] Element #reader not found, retrying...")
-          if (!cancelled) setTimeout(startScanner, 200)
+        const video = videoRef.current
+        if (!video) {
+          addLog("Video element not found")
           return
         }
 
-        html5QrCode = new Html5Qrcode(elementId)
-        
-        const config = {
-          fps: 15, // Slightly higher for smoother detection
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-          // Extra configurations for mobile
-          experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
-          }
-        }
-
-        const onScanSuccess = (decodedText: string) => {
-          if (hasScannedRef.current) return
-          hasScannedRef.current = true
-          
-          console.log("[Scanner] Decoded:", decodedText)
-          
-          // Stop and process
-          if (html5QrCode) {
-            html5QrCode.stop().then(() => {
-              processScan(decodedText)
-            }).catch((err: any) => {
-              console.error("[Scanner] Stop error:", err)
-              processScan(decodedText)
-            })
-          } else {
-            processScan(decodedText)
-          }
-        }
-
-        await html5QrCode.start(
-          { facingMode: "environment" },
-          config,
-          onScanSuccess,
-          () => {
-            // Error callback - ignored for frequent scanning
-          }
-        )
+        addLog("Requesting camera...")
+        videoStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" }
+        })
         
         if (cancelled) {
-          html5QrCode.stop().catch(() => {})
+          videoStream.getTracks().forEach(t => t.stop())
           return
         }
-        
-        console.log("[Scanner] Started successfully")
+
+        video.srcObject = videoStream
+        await video.play()
+        addLog("Video playing")
+
+        // Manual decoding loop for maximum control
+        const decode = async () => {
+          if (cancelled || hasScannedRef.current) return
+          
+          try {
+            const result = await codeReader.decodeFromVideoElement(video)
+            if (result && !hasScannedRef.current) {
+              const text = result.getText()
+              addLog("Found: " + text.substring(0, 10))
+              hasScannedRef.current = true
+              
+              if (videoStream) {
+                videoStream.getTracks().forEach(t => t.stop())
+              }
+              processScan(text)
+            }
+          } catch (e) {
+            // No QR found in this frame
+          }
+          
+          if (!hasScannedRef.current && !cancelled) {
+            setTimeout(decode, 200)
+          }
+        }
+
+        decode()
         setCameraStatus(lang === "th" ? "กล้องพร้อมใช้งาน - จัด QR ให้อยู่ในกรอบ" : "Camera ready - position QR in frame")
       } catch (err: any) {
-        console.error("[Scanner] Start error:", err)
+        addLog("Error: " + (err.message || String(err)))
         if (!cancelled) {
           setScanning(false)
-          setCameraStatus("")
-          const errorMessage = err?.message || String(err)
-          if (errorMessage.includes("Permission") || errorMessage.includes("permission")) {
-            setResult({ type: "error", message: t("cameraDenied") })
-          } else {
-            setResult({
-              type: "error",
-              message: lang === "th"
-                ? `ไม่สามารถเปิดกล้องได้: ${errorMessage}`
-                : `Could not start camera: ${errorMessage}`,
-            })
-          }
+          setResult({
+            type: "error",
+            message: `Scanner Error: ${err.message || String(err)}`,
+          })
         }
       }
     }
 
-    // Give the UI a moment to render the container
-    const timer = setTimeout(startScanner, 500)
+    startScanner()
 
     return () => {
       cancelled = true
-      clearTimeout(timer)
-      console.log("[Scanner] Cleaning up")
-      if (html5QrCode && html5QrCode.isScanning) {
-        html5QrCode.stop().catch((e: any) => console.error("[Scanner] Cleanup stop error:", e))
+      addLog("Cleanup")
+      if (videoStream) {
+        videoStream.getTracks().forEach(t => t.stop())
       }
     }
   }, [scanning, lang, t, processScan])
@@ -328,7 +317,30 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
                 scanning ? 'opacity-100 min-h-[300px]' : 'opacity-0 max-h-0'
               }`}
             >
-              <div id="reader" className="w-full" style={{ minHeight: scanning ? "300px" : "0px" }} />
+              <video
+                ref={videoRef}
+                className="w-full"
+                style={{ 
+                  height: scanning ? "350px" : "0px", 
+                  objectFit: "cover",
+                  display: scanning ? "block" : "none" 
+                }}
+                playsInline
+                muted
+                autoPlay
+                // @ts-ignore
+                webkit-playsinline="true"
+              />
+              {scanning && (
+                <div className="absolute inset-0 pointer-events-none border-2 border-primary/30 m-8 rounded-lg animate-pulse" />
+              )}
+              {scanning && (
+                <div className="absolute top-2 left-2 bg-black/60 p-2 rounded text-[10px] text-white font-mono z-20 pointer-events-none">
+                  {debugLog.map((log, i) => (
+                    <div key={i}>{log}</div>
+                  ))}
+                </div>
+              )}
               {scanning && (
                 <p className="absolute bottom-2 left-0 right-0 text-center text-[10px] text-white/70 bg-black/40 py-1 z-10 pointer-events-none">
                   {cameraStatus || t("positionQR")}
