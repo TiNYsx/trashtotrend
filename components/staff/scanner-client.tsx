@@ -27,6 +27,9 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
     progress?: { completed: number; total: number }
   } | null>(null)
   const [insecureWarning, setInsecureWarning] = useState<string | null>(null)
+  const [cameraStatus, setCameraStatus] = useState<string>("")
+  const [manualCode, setManualCode] = useState<string>("")
+  const [showManualInput, setShowManualInput] = useState<boolean>(false)
   const scannerRef = useRef<HTMLDivElement>(null)
   const html5QrRef = useRef<unknown>(null)
   const isScannerRunningRef = useRef(false)
@@ -54,6 +57,13 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
     let scanner: { stop: () => Promise<void>; clear: () => void; start: any } | null = null
 
     const startScanner = async () => {
+      setCameraStatus(lang === "th" ? "กำลังเปิดกล้อง..." : "Starting camera...")
+      
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+      if (isIOS) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+      }
+      
       const { Html5Qrcode } = await import("html5-qrcode")
       scanner = new Html5Qrcode("qr-reader")
       html5QrRef.current = scanner
@@ -61,8 +71,9 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
       try {
         await scanner.start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 250, height: 250 } },
+          { fps: 10 },
           async (decodedText: string) => {
+            console.log("QR detected:", decodedText)
             if (scanner && isScannerRunningRef.current) {
               try {
                 await (scanner as any).stop()
@@ -74,17 +85,20 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
             }
 
             setScanning(false)
+            setCameraStatus("")
             await handleScan(decodedText)
           },
-          () => {
-            /* ignore scan errors */
+          (errorMessage: string) => {
+            console.log("Scan frame error:", errorMessage)
           }
         )
 
         isScannerRunningRef.current = true
+        setCameraStatus(lang === "th" ? "กล้องพร้อมใช้งาน - จัด QR ให้อยู่ในกรอบ" : "Camera ready - position QR in frame")
       } catch (err: any) {
         isScannerRunningRef.current = false
         setScanning(false)
+        setCameraStatus("")
         console.error("Scanner start error:", err)
         const errorMessage = err?.message || err?.toString?.() || ""
         if (errorMessage.includes("Permission") || errorMessage.includes("permission") || errorMessage.includes("denied")) {
@@ -274,17 +288,64 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
 
             {/* Camera view */}
             {scanning && (
-              <div className="w-full overflow-hidden rounded-xl border border-border bg-foreground/5">
+              <div className="w-full rounded-xl border border-border bg-foreground/5">
                 <div
                   id="qr-reader"
                   ref={scannerRef}
                   className="w-full"
-                  style={{ minHeight: "300px" }}
+                  style={{ height: "350px" }}
                 />
                 <p className="py-3 text-center text-xs text-muted-foreground">
-                  {t("positionQR")}
+                  {cameraStatus || t("positionQR")}
                 </p>
               </div>
+            )}
+
+            {/* Manual input fallback */}
+            {!scanning && showManualInput && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full flex flex-col gap-3"
+              >
+                <input
+                  type="text"
+                  value={manualCode}
+                  onChange={(e) => setManualCode(e.target.value)}
+                  placeholder={lang === "th" ? "ป้อนรหัส QR ด้วยตนเอง" : "Enter QR code manually"}
+                  className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && manualCode.trim()) {
+                      handleScan(manualCode.trim())
+                      setManualCode("")
+                      setShowManualInput(false)
+                    }
+                  }}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      if (manualCode.trim()) {
+                        handleScan(manualCode.trim())
+                        setManualCode("")
+                        setShowManualInput(false)
+                      }
+                    }}
+                    className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                  >
+                    {lang === "th" ? "ยืนยัน" : "Submit"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowManualInput(false)
+                      setManualCode("")
+                    }}
+                    className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground"
+                  >
+                    {lang === "th" ? "ยกเลิก" : "Cancel"}
+                  </button>
+                </div>
+              </motion.div>
             )}
 
             {/* Result display */}
@@ -328,16 +389,24 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
             </AnimatePresence>
 
             {/* Scan button */}
-            {!scanning && (
-              <button
-                onClick={startNewScan}
-                className="flex h-14 items-center gap-3 rounded-full bg-primary px-8 text-sm font-semibold text-primary-foreground shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl glow-primary"
-              >
-                <Camera className="h-5 w-5" />
-                {result
-                  ? t("scanAgain")
-                  : t("startScanning")}
-              </button>
+            {!scanning && !showManualInput && (
+              <div className="flex flex-col items-center gap-3">
+                <button
+                  onClick={startNewScan}
+                  className="flex h-14 items-center gap-3 rounded-full bg-primary px-8 text-sm font-semibold text-primary-foreground shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl glow-primary"
+                >
+                  <Camera className="h-5 w-5" />
+                  {result
+                    ? t("scanAgain")
+                    : t("startScanning")}
+                </button>
+                <button
+                  onClick={() => setShowManualInput(true)}
+                  className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                >
+                  {lang === "th" ? "หรือป้อนรหัสด้วยตนเอง" : "Or enter code manually"}
+                </button>
+              </div>
             )}
 
             {scanning && (
