@@ -112,17 +112,16 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
   useEffect(() => {
     if (!scanning) return
 
+    let scanner: any = null
     let cancelled = false
-    let videoStream: MediaStream | null = null
-    let decodeInterval: NodeJS.Timeout | null = null
 
     const startScanner = async () => {
-      addLog("Starting ZXing Manual Scanner...")
+      addLog("Starting QrScanner (No Worker)...")
       hasScannedRef.current = false
       
       try {
-        const { BrowserQRCodeReader } = await import('@zxing/library')
-        const codeReader = new BrowserQRCodeReader()
+        const qrScannerModule = await import('qr-scanner')
+        const QrScanner = qrScannerModule.default
         
         if (cancelled) return
 
@@ -132,46 +131,49 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
           return
         }
 
-        addLog("Requesting camera...")
-        videoStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" }
-        })
+        addLog("Initializing scanner...")
         
-        if (cancelled) {
-          videoStream.getTracks().forEach(t => t.stop())
-          return
-        }
-
-        video.srcObject = videoStream
-        await video.play()
-        addLog("Video playing")
-
-        // Manual decoding loop for maximum control
-        const decode = async () => {
-          if (cancelled || hasScannedRef.current) return
-          
-          try {
-            const result = await codeReader.decodeFromVideoElement(video)
-            if (result && !hasScannedRef.current) {
-              const text = result.getText()
-              addLog("Found: " + text.substring(0, 10))
-              hasScannedRef.current = true
-              
-              if (videoStream) {
-                videoStream.getTracks().forEach(t => t.stop())
-              }
-              processScan(text)
+        scanner = new QrScanner(
+          video,
+          (scanResult: any) => {
+            if (hasScannedRef.current) return
+            
+            let decodedText: string
+            if (typeof scanResult === 'string') {
+              decodedText = scanResult
+            } else {
+              decodedText = scanResult.data || String(scanResult)
             }
-          } catch (e) {
-            // No QR found in this frame
+            
+            if (decodedText && decodedText !== 'undefined') {
+              hasScannedRef.current = true
+              addLog("Scanned: " + decodedText.substring(0, 10))
+              scanner.stop()
+              processScan(decodedText)
+            }
+          },
+          {
+            preferredCamera: 'environment',
+            maxScansPerSecond: 10,
+            highlightScanRegion: true,
+            highlightCodeOutline: true,
+            // DO NOT use worker for iOS - it's often more stable on main thread
+            calculateScanRegion: (v) => {
+              return {
+                x: 0,
+                y: 0,
+                width: v.videoWidth,
+                height: v.videoHeight,
+                downScaleFactor: 1
+              }
+            }
           }
-          
-          if (!hasScannedRef.current && !cancelled) {
-            setTimeout(decode, 200)
-          }
-        }
+        )
 
-        decode()
+        addLog("Starting camera...")
+        await scanner.start()
+        addLog("Camera started")
+        
         setCameraStatus(lang === "th" ? "กล้องพร้อมใช้งาน - จัด QR ให้อยู่ในกรอบ" : "Camera ready - position QR in frame")
       } catch (err: any) {
         addLog("Error: " + (err.message || String(err)))
@@ -185,13 +187,16 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
       }
     }
 
-    startScanner()
+    // Small delay to ensure video element is ready
+    const timer = setTimeout(startScanner, 500)
 
     return () => {
       cancelled = true
+      clearTimeout(timer)
       addLog("Cleanup")
-      if (videoStream) {
-        videoStream.getTracks().forEach(t => t.stop())
+      if (scanner) {
+        scanner.stop()
+        scanner.destroy()
       }
     }
   }, [scanning, lang, t, processScan])
