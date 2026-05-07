@@ -111,13 +111,15 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
   }
 
   const [isProcessingSnapshot, setIsProcessingSnapshot] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const captureAndScan = async () => {
-    if (!videoRef.current || isProcessingSnapshot) return
-    
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
     setIsProcessingSnapshot(true)
-    addLog("Capturing snapshot...")
-    
+    addLog("Processing file...")
+
     try {
       // 1. Load jsQR from CDN
       if (!(window as any).jsQR) {
@@ -129,45 +131,64 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
           document.head.appendChild(script)
         })
       }
-      
-      const video = videoRef.current
+
+      const img = new Image()
+      img.src = URL.createObjectURL(file)
+      await new Promise((resolve) => (img.onload = resolve))
+
       const canvas = document.createElement("canvas")
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
       const ctx = canvas.getContext("2d")
-      
-      if (ctx) {
-        // Draw the current video frame
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-        
-        // Try decoding with jsQR
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-        let code = (window as any).jsQR(imageData.data, imageData.width, imageData.height, {
-          inversionAttempts: "dontInvert",
-        })
-        
-        // If not found, try with inversion (for white-on-black)
-        if (!code) {
-          code = (window as any).jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: "attemptBoth",
-          })
-        }
-        
-        if (code) {
-          addLog("Snapshot Scanned!")
-          hasScannedRef.current = true
-          processScan(code.data)
+      if (!ctx) return
+
+      // Keep it within reasonable size for processing
+      const maxDim = 1024
+      let width = img.width
+      let height = img.height
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = (height / width) * maxDim
+          width = maxDim
         } else {
-          addLog("No QR found in snapshot")
-          // Briefly show a visual shake or message
-          setResult({ type: "error", message: lang === "th" ? "ไม่พบ QR ในภาพถ่าย กรุณาลองใหม่" : "No QR found in snapshot. Try again." })
-          setTimeout(() => setResult(null), 2000)
+          width = (width / height) * maxDim
+          height = maxDim
         }
       }
+
+      canvas.width = width
+      canvas.height = height
+      ctx.drawImage(img, 0, 0, width, height)
+
+      const imageData = ctx.getImageData(0, 0, width, height)
+      const code = (window as any).jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: "attemptBoth",
+      })
+
+      if (code) {
+        addLog("File Scanned!")
+        hasScannedRef.current = true
+        processScan(code.data)
+      } else {
+        setResult({
+          type: "error",
+          message: lang === "th" ? "ไม่พบ QR ในรูปภาพ กรุณาลองใหม่" : "No QR found in image. Please try again.",
+        })
+        setTimeout(() => setResult(null), 3000)
+      }
+      
+      URL.revokeObjectURL(img.src)
     } catch (err) {
-      addLog("Snapshot error: " + err)
+      addLog("File error: " + err)
     } finally {
       setIsProcessingSnapshot(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+  }
+
+  const captureAndScan = async () => {
+    // If WebRTC is failing (which we know it is on this device), 
+    // we trigger the native camera instead
+    if (fileInputRef.current) {
+      fileInputRef.current.click()
     }
   }
 
@@ -179,7 +200,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
     let decodeTimeout: NodeJS.Timeout | null = null
 
     const startScanner = async () => {
-      addLog("Starting Photo-Ready Camera...")
+      addLog("Attempting Camera...")
       hasScannedRef.current = false
       
       try {
@@ -189,8 +210,8 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
         videoStream = await navigator.mediaDevices.getUserMedia({
           video: { 
             facingMode: "environment",
-            width: { ideal: 1920 }, // High res for manual capture
-            height: { ideal: 1080 }
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
           }
         })
         
@@ -201,21 +222,10 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
 
         video.srcObject = videoStream
         video.setAttribute("playsinline", "true")
-        await video.play().catch(e => addLog("Play error: " + e))
-        addLog("Video Active")
-
-        // We'll still keep a slow background loop, but the "Capture" button is the main fallback
-        const autoLoop = async () => {
-          if (cancelled || hasScannedRef.current || isProcessingSnapshot) return
-          // ... (existing zxing loop could go here, but let's keep it simple and lean for now)
-          if (!cancelled && !hasScannedRef.current) {
-            decodeTimeout = setTimeout(autoLoop, 1000)
-          }
-        }
-        autoLoop()
-
+        await video.play().catch(e => addLog("Stream Restricted"))
+        addLog("Live Stream Active")
       } catch (err: any) {
-        addLog("Err: " + err.message)
+        addLog("Camera Restricted")
       }
     }
 
@@ -223,10 +233,9 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
 
     return () => {
       cancelled = true
-      if (decodeTimeout) clearTimeout(decodeTimeout)
       if (videoStream) videoStream.getTracks().forEach(t => t.stop())
     }
-  }, [scanning, lang, t, processScan, isProcessingSnapshot])
+  }, [scanning, lang, t, processScan])
 
   const handleManualScan = async () => {
     if (manualCode.trim()) {
@@ -349,6 +358,16 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
                 scanning ? 'opacity-100 min-h-[300px]' : 'opacity-0 max-h-0'
               }`}
             >
+              {/* Hidden file input for native camera fallback */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+
               <video
                 ref={videoRef}
                 className="w-full"
@@ -364,28 +383,18 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
                 webkit-playsinline="true"
               />
               {scanning && (
-                <div className="absolute inset-0 pointer-events-none border-2 border-primary/30 m-8 rounded-lg animate-pulse" />
-              )}
-              {scanning && (
-                <div className="absolute top-2 left-2 bg-black/60 p-2 rounded text-[10px] text-white font-mono z-20 pointer-events-none">
-                  {debugLog.map((log, i) => (
-                    <div key={i}>{log}</div>
-                  ))}
-                </div>
-              )}
-              {scanning && (
                 <div className="absolute inset-x-0 bottom-12 flex justify-center z-20">
                   <button
                     onClick={captureAndScan}
                     disabled={isProcessingSnapshot}
-                    className="flex h-12 items-center gap-2 rounded-full bg-primary/90 px-6 text-sm font-bold text-white shadow-lg backdrop-blur-sm transition-transform active:scale-95 disabled:opacity-50"
+                    className="flex h-12 items-center gap-2 rounded-full bg-primary px-8 text-sm font-bold text-white shadow-lg transition-transform active:scale-95 disabled:opacity-50"
                   >
                     {isProcessingSnapshot ? (
                       <RefreshCw className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Camera className="h-4 w-4" />
+                      <Camera className="h-5 w-5" />
                     )}
-                    {lang === "th" ? "สแกนเดี๋ยวนี้" : "Scan Now"}
+                    {lang === "th" ? "ถ่ายภาพเพื่อสแกน" : "Take Photo to Scan"}
                   </button>
                 </div>
               )}
@@ -393,7 +402,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
                 <p className="absolute bottom-2 left-0 right-0 text-center text-[10px] text-white/70 bg-black/40 py-1 z-10 pointer-events-none">
                   {isProcessingSnapshot 
                     ? (lang === "th" ? "กำลังประมวลผล..." : "Processing...") 
-                    : (cameraStatus || t("positionQR"))}
+                    : (lang === "th" ? "จัด QR ให้อยู่ในกรอบแล้วกดถ่ายภาพ" : "Position QR and tap Take Photo")}
                 </p>
               )}
             </div>
