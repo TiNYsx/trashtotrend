@@ -11,10 +11,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
     }
 
-    const table = role === 'staff' ? 'staff' : 'users'
+    const table = role === 'staff' ? 'staff' : 'customers'
     const identifierColumn = role === 'staff' ? 'username' : 'email'
     const result = await query(
-      `SELECT id, ${identifierColumn} as email, password_hash, '${role}' as role FROM ${table} WHERE ${identifierColumn} = $1`,
+      `SELECT id, ${identifierColumn} as email, password_hash, '${role === 'staff' ? 'staff' : 'customer'}' as role FROM ${table} WHERE ${identifierColumn} = $1`,
       [email]
     )
 
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     await createSession({
       id: user.id,
-      role: role === 'staff' ? 'staff' : 'user',
+      role: role === 'staff' ? 'staff' : 'customer',
       email: user.email
     })
 

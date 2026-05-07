@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     
     const { answers } = await request.json()
 
-    if (!answers || Object.keys(answers).length !== 8) {
+    if (!answers || Object.keys(answers).length === 0) {
       return NextResponse.json({ error: 'All questions must be answered' }, { status: 400 })
     }
 
