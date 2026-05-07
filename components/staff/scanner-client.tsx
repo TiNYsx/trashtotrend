@@ -198,7 +198,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
 
         const html5Scanner = new Html5Scanner(HTML5_QR_READER_ID, {
           verbose: false,
-          useBarCodeDetectorIfSupported: true,
+          useBarCodeDetectorIfSupported: false,
         })
         html5ScannerRef.current = html5Scanner
         const cameraConfig = await resolvePreferredCamera()
@@ -207,17 +207,9 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
         await html5Scanner.start(
           cameraConfig,
           {
-            fps: 12,
-            qrbox: (viewfinderWidth, viewfinderHeight) => {
-              const edge = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.75)
-              return { width: edge, height: edge }
-            },
-            disableFlip: true,
-            videoConstraints: {
-              facingMode: { ideal: "environment" },
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
-            },
+            fps: 8,
+            aspectRatio: 1,
+            disableFlip: false,
           },
           (decodedText) => {
             if (hasScannedRef.current || !decodedText) return
@@ -263,7 +255,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
     const Html5Scanner = await loadHtml5Qrcode()
     const scanner = new Html5Scanner(HTML5_QR_FILE_READER_ID, {
       verbose: false,
-      useBarCodeDetectorIfSupported: true,
+      useBarCodeDetectorIfSupported: false,
     })
 
     try {
