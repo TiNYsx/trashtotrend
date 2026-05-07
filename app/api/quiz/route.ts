@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const result = await query(
       `SELECT id, question_en, question_th, options, display_order, quiz_category, booth_id 
        FROM quiz_questions 
-       WHERE is_active = true AND (quiz_category = $1 OR booth_id IS NULL)
+       WHERE is_active = true AND quiz_category = $1
        ORDER BY display_order`,
       [category]
     )

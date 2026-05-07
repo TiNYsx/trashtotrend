@@ -50,7 +50,7 @@ export default async function QuizPage() {
 
   try {
     questions = await getMany<Question>(
-      "SELECT * FROM quiz_questions ORDER BY display_order ASC"
+      "SELECT * FROM quiz_questions WHERE quiz_category = 'journey' OR quiz_category IS NULL ORDER BY display_order ASC"
     )
     personalityTypes = await getMany<PersonalityType>(
       "SELECT * FROM personality_types ORDER BY display_order ASC"
