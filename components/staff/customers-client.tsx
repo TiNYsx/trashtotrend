@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useLanguage } from "@/components/providers"
-import { Users, ArrowLeft, Search, CheckCircle, XCircle, ClipboardCheck, Loader2 } from "lucide-react"
+import { Users, ArrowLeft, Search, CheckCircle, XCircle, ClipboardCheck, Loader2, Download } from "lucide-react"
 import { toast } from "sonner"
 
 type Customer = {
@@ -30,6 +30,7 @@ export function CustomersClient({ customers, booths }: { customers: Customer[], 
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithStamps | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [customerList, setCustomerList] = useState<Customer[]>(customers)
+  const [isExporting, setIsExporting] = useState(false)
 
   useEffect(() => {
     setCustomerList(customers)
@@ -125,16 +126,47 @@ export function CustomersClient({ customers, booths }: { customers: Customer[], 
     setIsSaving(false)
   }
 
+  const handleExport = async () => {
+    setIsExporting(true)
+    try {
+      const res = await fetch("/api/export")
+      if (!res.ok) throw new Error("Export failed")
+
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `customer-data-export-${new Date().toISOString().split("T")[0]}.xlsx`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+
+      toast.success(lang === "th" ? "ดาวน์โหลดสำเร็จ!" : "Downloaded successfully!")
+    } catch {
+      toast.error(lang === "th" ? "การส่งออกล้มเหลว" : "Export failed")
+    }
+    setIsExporting(false)
+  }
+
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
         <Link href="/staff/dashboard" className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground">
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <div>
+        <div className="flex-1">
           <h1 className="font-serif text-2xl font-bold text-foreground">{t("customers")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{filteredCustomers.length} {lang === "th" ? "คน" : "total"}</p>
         </div>
+        <button
+          onClick={handleExport}
+          disabled={isExporting}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+        >
+          {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          {lang === "th" ? "ส่งออก Excel" : "Export Excel"}
+        </button>
       </div>
 
       <div className="relative mb-4">
