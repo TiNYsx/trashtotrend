@@ -18,9 +18,8 @@ export async function GET() {
       created_at: string
       pre_survey_completed: boolean
       post_survey_completed: boolean
-      quiz_type: string | null
     }>(`
-      SELECT id, email, registration_data, created_at, pre_survey_completed, post_survey_completed, quiz_type
+      SELECT id, email, registration_data, created_at, pre_survey_completed, post_survey_completed
       FROM customers
       ORDER BY created_at DESC
     `)
@@ -144,9 +143,9 @@ export async function GET() {
       const personality = personalityResults.get(c.id)
       const regData = c.registration_data || {}
       
-      // Get personality from calculated results or fallback to customer record
-      const personalityType = personality?.label || (c.quiz_type ? personalityMap.get(c.quiz_type) || c.quiz_type : "")
-      const personalityCode = personality?.type || c.quiz_type || ""
+      // Get personality from calculated results
+      const personalityType = personality?.label || ""
+      const personalityCode = personality?.type || ""
       
       // Build comma-separated survey answers
       const preAnswers = preSurveyMap.get(c.id)
@@ -187,13 +186,11 @@ export async function GET() {
       const answers = customerQuizAnswers.get(customer.id)
       const personality = personalityResults.get(customer.id)
       if (answers && Object.keys(answers).length > 0) {
-        const personalityType = personality?.label || (customer.quiz_type ? personalityMap.get(customer.quiz_type) || customer.quiz_type : "")
-        const personalityCode = personality?.type || customer.quiz_type || ""
         const row: Record<string, string | number> = {
           "Customer ID": customer.id,
           "Email": customer.email,
-          "Personality Type": personalityType,
-          "Personality Code": personalityCode,
+          "Personality Type": personality?.label || "",
+          "Personality Code": personality?.type || "",
         }
         for (const [questionId, answer] of Object.entries(answers)) {
           row[`Q${questionId}`] = answer
@@ -252,12 +249,11 @@ export async function GET() {
     // Sheet 5: Personality Distribution
     const personalityDist: Record<string, string | number>[] = []
     for (const [typeCode, label] of personalityMap) {
-      const countFromResponses = Array.from(personalityResults.values()).filter(r => r.type === typeCode).length
-      const countFromQuizType = customers.filter(c => c.quiz_type === typeCode && !personalityResults.has(c.id)).length
+      const count = Array.from(personalityResults.values()).filter(r => r.type === typeCode).length
       personalityDist.push({
         "Type Code": typeCode,
         "Type Name": label,
-        "Count": countFromResponses + countFromQuizType,
+        "Count": count,
       })
     }
 
