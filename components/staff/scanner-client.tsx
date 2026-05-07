@@ -26,6 +26,7 @@ type ScanResult = {
 
 const QR_WORKER_PATH = "/qr-scanner-worker.min.js"
 const HTML5_QR_READER_ID = "staff-html5-qr-reader"
+const HTML5_QR_FILE_READER_ID = "staff-html5-qr-file-reader"
 
 function extractQrToken(decodedText: string) {
   const text = decodedText.trim()
@@ -69,16 +70,6 @@ async function loadHtml5Qrcode() {
   return module.Html5Qrcode
 }
 
-function isIOSDevice() {
-  if (typeof navigator === "undefined") return false
-
-  const platform = navigator.platform || ""
-  const userAgent = navigator.userAgent || ""
-  const isiPadOS = platform === "MacIntel" && navigator.maxTouchPoints > 1
-
-  return /iPad|iPhone|iPod/.test(userAgent) || isiPadOS
-}
-
 export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
   const { t, lang } = useLanguage()
   const [selectedCheckpoint, setSelectedCheckpoint] = useState<Checkpoint | null>(null)
@@ -90,8 +81,6 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
   const [showManualInput, setShowManualInput] = useState(false)
   const [isProcessingImage, setIsProcessingImage] = useState(false)
 
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const scannerRef = useRef<QrScanner | null>(null)
   const html5ScannerRef = useRef<Html5Qrcode | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const hasScannedRef = useRef(false)
@@ -103,46 +92,33 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
     if (protocol !== "https:" && hostname !== "localhost" && hostname !== "127.0.0.1") {
       setInsecureWarning(
         lang === "th"
-          ? "เบราว์เซอร์บล็อกการเข้าถึงกล้องบน HTTP กรุณาใช้ HTTPS หรือ localhost สำหรับทดสอบ"
+          ? "Browser blocks camera access on HTTP. Use HTTPS or localhost for testing."
           : "Your browser blocks camera access over HTTP. Use HTTPS or localhost for testing."
       )
     }
   }, [lang])
 
   const stopScanner = useCallback(() => {
-    const scanner = scannerRef.current
     const html5Scanner = html5ScannerRef.current
-    scannerRef.current = null
     html5ScannerRef.current = null
 
-    if (scanner) {
-      try {
-        scanner.stop()
-      } catch {
-        // The scanner may already be stopped after a successful decode.
-      }
-      scanner.destroy()
-    }
+    if (!html5Scanner) return
 
-    if (html5Scanner) {
-      if (html5Scanner.isScanning) {
-        html5Scanner.stop().catch(() => {
-          // The scanner may already be stopped by the time React cleans up.
-        }).finally(() => {
+    if (html5Scanner.isScanning) {
+      html5Scanner
+        .stop()
+        .catch(() => {})
+        .finally(() => {
           try {
             html5Scanner.clear()
-          } catch {
-            // Ignore cleanup races.
-          }
+          } catch {}
         })
-      } else {
-        try {
-          html5Scanner.clear()
-        } catch {
-          // Ignore cleanup races.
-        }
-      }
+      return
     }
+
+    try {
+      html5Scanner.clear()
+    } catch {}
   }, [])
 
   const processScan = useCallback(async (decodedText: string) => {
@@ -196,93 +172,52 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
     }
 
     let cancelled = false
+
     const startScanner = async () => {
-      setCameraStatus(lang === "th" ? "กำลังเตรียมกล้อง..." : "Preparing camera...")
+      setCameraStatus("Preparing camera...")
       hasScannedRef.current = false
 
       try {
-        if (isIOSDevice()) {
-          const Html5Scanner = await loadHtml5Qrcode()
-          if (cancelled) return
+        const Html5Scanner = await loadHtml5Qrcode()
+        if (cancelled) return
 
-          const html5Scanner = new Html5Scanner(HTML5_QR_READER_ID, {
-            verbose: false,
-            useBarCodeDetectorIfSupported: true,
-          })
-          html5ScannerRef.current = html5Scanner
+        const html5Scanner = new Html5Scanner(HTML5_QR_READER_ID, {
+          verbose: false,
+          useBarCodeDetectorIfSupported: true,
+        })
+        html5ScannerRef.current = html5Scanner
 
-          await html5Scanner.start(
-            { facingMode: "environment" },
-            {
-              fps: 10,
-              qrbox: (viewfinderWidth, viewfinderHeight) => {
-                const edge = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.82)
-                return { width: edge, height: edge }
-              },
-              aspectRatio: 1,
-              disableFlip: true,
-              videoConstraints: {
-                facingMode: { ideal: "environment" },
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
-              },
+        await html5Scanner.start(
+          { facingMode: "environment" },
+          {
+            fps: 12,
+            qrbox: (viewfinderWidth, viewfinderHeight) => {
+              const edge = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.8)
+              return { width: edge, height: edge }
             },
-            (decodedText) => {
-              if (hasScannedRef.current || !decodedText) return
-
-              hasScannedRef.current = true
-              stopScanner()
-              void processScan(decodedText)
+            disableFlip: false,
+            videoConstraints: {
+              facingMode: { ideal: "environment" },
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
             },
-            () => {
-              // No QR in frame yet; keep scanning.
-            }
-          )
-        } else {
-          const video = videoRef.current
-          if (!video) return
+          },
+          (decodedText) => {
+            if (hasScannedRef.current || !decodedText) return
 
-          video.setAttribute("playsinline", "true")
-          video.setAttribute("webkit-playsinline", "true")
-          video.muted = true
-
-          const Scanner = await loadQrScanner()
-          if (cancelled) return
-
-          const scanner = new Scanner(
-            video,
-            (scanResult) => {
-              if (hasScannedRef.current) return
-
-              const decodedText = getScanText(scanResult)
-              if (!decodedText) return
-
-              hasScannedRef.current = true
-              stopScanner()
-              void processScan(decodedText)
-            },
-            {
-              preferredCamera: "environment",
-              maxScansPerSecond: 10,
-              highlightScanRegion: true,
-              highlightCodeOutline: true,
-              returnDetailedScanResult: true,
-              onDecodeError: () => {
-                // No QR in frame yet; keep scanning.
-              },
-            }
-          )
-
-          scannerRef.current = scanner
-          await scanner.start()
-        }
+            hasScannedRef.current = true
+            stopScanner()
+            void processScan(decodedText)
+          },
+          () => {}
+        )
 
         if (cancelled) {
           stopScanner()
           return
         }
 
-        setCameraStatus(lang === "th" ? "กล้องพร้อมแล้ว วาง QR ให้อยู่ในกรอบ" : "Camera ready. Position QR in frame.")
+        setCameraStatus("Camera ready. Position QR in frame.")
       } catch (err) {
         if (cancelled) return
 
@@ -305,11 +240,11 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
       window.clearTimeout(timer)
       stopScanner()
     }
-  }, [lang, processScan, scanning, stopScanner, t])
+  }, [processScan, scanning, stopScanner, t])
 
   const scanImageWithHtml5 = async (file: File) => {
     const Html5Scanner = await loadHtml5Qrcode()
-    const scanner = new Html5Scanner(`${HTML5_QR_READER_ID}-file`, {
+    const scanner = new Html5Scanner(HTML5_QR_FILE_READER_ID, {
       verbose: false,
       useBarCodeDetectorIfSupported: true,
     })
@@ -320,9 +255,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
     } finally {
       try {
         scanner.clear()
-      } catch {
-        // The file scanner may not have rendered UI.
-      }
+      } catch {}
     }
   }
 
@@ -344,25 +277,16 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
 
     try {
       let decodedText = ""
-
       try {
-        decodedText = isIOSDevice()
-          ? await scanImageWithHtml5(file)
-          : await scanImageWithQrScanner(file)
+        decodedText = await scanImageWithHtml5(file)
       } catch {
-        decodedText = isIOSDevice()
-          ? await scanImageWithQrScanner(file)
-          : await scanImageWithHtml5(file)
+        decodedText = await scanImageWithQrScanner(file)
       }
-
       await processScan(decodedText)
     } catch {
       setResult({
         type: "error",
-        message:
-          lang === "th"
-            ? "ไม่พบ QR Code ในภาพ กรุณาถ่ายให้เห็น QR ทั้งหมดและหลีกเลี่ยงแสงสะท้อน"
-            : "No QR code found in the image. Keep the full QR visible and avoid glare.",
+        message: "No QR code found in the image. Keep the full QR visible and avoid glare.",
       })
     } finally {
       setIsProcessingImage(false)
@@ -391,7 +315,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
       setResult({
         type: "error",
-        message: lang === "th" ? "เบราว์เซอร์นี้ไม่รองรับการเข้าถึงกล้อง" : "This browser does not support camera access.",
+        message: "This browser does not support camera access.",
       })
       return
     }
@@ -414,9 +338,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
               <MapPin className="h-5 w-5 text-primary" />
               {t("scanBooth")}
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("scanCustomerQR")}
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{t("scanCustomerQR")}</p>
           </div>
         </div>
 
@@ -427,14 +349,8 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
         )}
 
         {!selectedCheckpoint && (
-          <motion.div
-            className="w-full"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <p className="mb-4 text-center text-sm font-medium text-foreground">
-              {t("selectBooth")}:
-            </p>
+          <motion.div className="w-full" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <p className="mb-4 text-center text-sm font-medium text-foreground">{t("selectBooth")}:</p>
             <div className="grid grid-cols-2 gap-3">
               {checkpoints.map((checkpoint, idx) => (
                 <button
@@ -451,20 +367,14 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
                 </button>
               ))}
               {checkpoints.length === 0 && (
-                <p className="col-span-2 py-8 text-center text-sm text-muted-foreground">
-                  {t("noBooths")}
-                </p>
+                <p className="col-span-2 py-8 text-center text-sm text-muted-foreground">{t("noBooths")}</p>
               )}
             </div>
           </motion.div>
         )}
 
         {selectedCheckpoint && (
-          <motion.div
-            className="flex w-full flex-col items-center gap-4"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
+          <motion.div className="flex w-full flex-col items-center gap-4" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <div className="flex items-center gap-2 rounded-full glass px-4 py-2">
               <MapPin className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-foreground">
@@ -494,34 +404,15 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
 
             <div
               className={`relative w-full overflow-hidden rounded-xl border border-border bg-black transition-all duration-300 ${
-                scanning ? "opacity-100 max-h-[500px]" : "opacity-0 max-h-0"
+                scanning ? "opacity-100 max-h-[520px]" : "opacity-0 max-h-0"
               }`}
             >
-              <video
-                ref={videoRef}
-                className={isIOSDevice() ? "hidden" : "block w-full"}
-                style={{
-                  height: scanning ? "350px" : "0px",
-                  objectFit: "cover",
-                }}
-                playsInline
-                muted
-                autoPlay
-              />
-              <div
-                id={HTML5_QR_READER_ID}
-                className={isIOSDevice() && scanning ? "w-full min-h-[350px]" : "hidden"}
-              />
-              <div id={`${HTML5_QR_READER_ID}-file`} className="hidden" />
+              <div id={HTML5_QR_READER_ID} className={scanning ? "w-full min-h-[350px]" : "hidden"} />
+              <div id={HTML5_QR_FILE_READER_ID} className="hidden" />
               {scanning && (
-                <>
-                  {!isIOSDevice() && (
-                    <div className="absolute inset-8 rounded-lg border-2 border-primary/40 pointer-events-none" />
-                  )}
-                  <p className="absolute bottom-2 left-0 right-0 z-10 bg-black/45 px-3 py-1 text-center text-[10px] text-white/80">
-                    {cameraStatus || t("positionQR")}
-                  </p>
-                </>
+                <p className="absolute bottom-2 left-0 right-0 z-10 bg-black/45 px-3 py-1 text-center text-[10px] text-white/80">
+                  {cameraStatus || t("positionQR")}
+                </p>
               )}
             </div>
 
@@ -531,37 +422,26 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
                 disabled={isProcessingImage}
                 className="flex h-11 items-center gap-2 rounded-full border border-border bg-card px-5 text-sm font-semibold text-foreground shadow-sm disabled:opacity-50"
               >
-                {isProcessingImage ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ImageUp className="h-4 w-4" />
-                )}
-                {lang === "th" ? "สแกนจากภาพถ่าย" : "Scan from Photo"}
+                {isProcessingImage ? <RefreshCw className="h-4 w-4 animate-spin" /> : <ImageUp className="h-4 w-4" />}
+                {lang === "th" ? "Scan from Photo" : "Scan from Photo"}
               </button>
             )}
 
             {!scanning && showManualInput && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="w-full flex flex-col gap-3"
-              >
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full flex flex-col gap-3">
                 <input
                   type="text"
                   value={manualCode}
                   onChange={(e) => setManualCode(e.target.value)}
-                  placeholder={lang === "th" ? "ป้อนรหัส QR ด้วยตนเอง" : "Enter QR code manually"}
+                  placeholder="Enter QR code manually"
                   className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") void handleManualScan()
                   }}
                 />
                 <div className="flex gap-2">
-                  <button
-                    onClick={handleManualScan}
-                    className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-                  >
-                    {lang === "th" ? "ยืนยัน" : "Submit"}
+                  <button onClick={handleManualScan} className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+                    Submit
                   </button>
                   <button
                     onClick={() => {
@@ -608,9 +488,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
                   >
                     {result.message}
                   </p>
-                  {result.userName && (
-                    <p className="text-lg font-bold text-foreground">{result.userName}</p>
-                  )}
+                  {result.userName && <p className="text-lg font-bold text-foreground">{result.userName}</p>}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -630,13 +508,13 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
                   className="flex items-center gap-2 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline disabled:opacity-50"
                 >
                   {isProcessingImage && <RefreshCw className="h-3 w-3 animate-spin" />}
-                  {lang === "th" ? "หรือสแกนจากภาพถ่าย" : "Or scan from a photo"}
+                  Or scan from a photo
                 </button>
                 <button
                   onClick={() => setShowManualInput(true)}
                   className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                 >
-                  {lang === "th" ? "หรือป้อนรหัสด้วยตนเอง" : "Or enter code manually"}
+                  Or enter code manually
                 </button>
               </div>
             )}
