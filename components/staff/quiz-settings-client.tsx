@@ -57,6 +57,8 @@ export function QuizSettingsClient({
   const [formCode, setFormCode] = useState("")
   const [formDescEn, setFormDescEn] = useState("")
   const [formDescTh, setFormDescTh] = useState("")
+  const [questionType, setQuestionType] = useState("multiple_choice")
+  const [mcOptions, setMcOptions] = useState<{ text_en: string; text_th: string }[]>([])
 
   const filteredQuestions = questions.filter(q => q.quiz_category === "journey" || !q.quiz_category)
   const nextDisplayOrder = questions.length > 0 ? Math.max(...questions.map(q => q.display_order)) + 1 : 1
@@ -65,6 +67,8 @@ export function QuizSettingsClient({
     setEditItem(null)
     setFormEn("")
     setFormTh("")
+    setQuestionType("multiple_choice")
+    setMcOptions([])
     setShowModal("question")
   }
 
@@ -72,6 +76,8 @@ export function QuizSettingsClient({
     setEditItem(q)
     setFormEn(q.question_en)
     setFormTh(q.question_th)
+    setQuestionType(q.question_type || "multiple_choice")
+    setMcOptions(q.options || [])
     setShowModal("question")
   }
 
@@ -107,8 +113,8 @@ export function QuizSettingsClient({
         id: editItem?.id || 0,
         question_en: formEn,
         question_th: formTh,
-        question_type: "multiple_choice",
-        options: [],
+        question_type: questionType,
+        options: questionType === "multiple_choice" ? mcOptions : null,
         display_order: editItem ? editItem.display_order : nextDisplayOrder,
         is_active: true,
         booth_id: null,
@@ -123,7 +129,7 @@ export function QuizSettingsClient({
       
       if (res.ok) {
         if (editItem) {
-          setQuestions(questions.map(q => q.id === editItem.id ? { ...q, question_en: formEn, question_th: formTh } : q))
+          setQuestions(questions.map(q => q.id === editItem.id ? { ...q, question_en: formEn, question_th: formTh, question_type: questionType, options: questionType === "multiple_choice" ? mcOptions : null } : q))
         } else {
           setQuestions([...questions, { ...question, id: Date.now() }])
         }
@@ -360,6 +366,44 @@ export function QuizSettingsClient({
                     <label className="text-sm font-medium">{t("questionTh")}</label>
                     <input value={formTh} onChange={(e) => setFormTh(e.target.value)} className="w-full h-10 px-3 rounded-lg border border-input bg-background mt-1" />
                   </div>
+                  <div>
+                    <label className="text-sm font-medium">{t("questionType")}</label>
+                    <select value={questionType} onChange={(e) => setQuestionType(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg border border-input bg-background mt-1">
+                      <option value="multiple_choice">{t("multipleChoice")}</option>
+                      <option value="short_text">{t("shortText")}</option>
+                    </select>
+                  </div>
+                  {questionType === "multiple_choice" && (
+                    <div className="space-y-3 p-4 rounded-lg border border-border bg-secondary/30">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium">{t("options")}</label>
+                        <button type="button" onClick={() => setMcOptions([...mcOptions, { text_en: "", text_th: "" }])}
+                          className="flex items-center gap-1 text-sm text-primary hover:underline">
+                          <Plus className="h-3 w-3" /> {t("addOption")}
+                        </button>
+                      </div>
+                      {mcOptions.length === 0 && (
+                        <p className="text-sm text-muted-foreground">{lang === "th" ? "ยังไม่มีตัวเลือก" : "No options yet"}</p>
+                      )}
+                      {mcOptions.map((opt, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <input value={opt.text_en} onChange={(e) => {
+                            const copy = [...mcOptions]; copy[i] = { ...copy[i], text_en: e.target.value }; setMcOptions(copy)
+                          }} placeholder={lang === "th" ? "ตัวเลือก (EN)" : "Option (EN)"}
+                            className="flex-1 h-9 px-3 rounded-lg border border-input bg-background text-sm" />
+                          <input value={opt.text_th} onChange={(e) => {
+                            const copy = [...mcOptions]; copy[i] = { ...copy[i], text_th: e.target.value }; setMcOptions(copy)
+                          }} placeholder={lang === "th" ? "ตัวเลือก (TH)" : "Option (TH)"}
+                            className="flex-1 h-9 px-3 rounded-lg border border-input bg-background text-sm" />
+                          <button type="button" onClick={() => setMcOptions(mcOptions.filter((_, j) => j !== i))}
+                            className="p-1.5 text-muted-foreground hover:text-destructive">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </>
               ) : (
                 <>

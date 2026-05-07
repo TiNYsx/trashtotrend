@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     await query(
-      'UPDATE users SET post_survey_completed = true WHERE id = $1',
+      'UPDATE customers SET post_survey_completed = true WHERE id = $1',
       [session.id]
     )
 

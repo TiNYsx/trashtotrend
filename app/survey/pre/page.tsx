@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { ArrowLeft, CheckCircle, Loader2 } from 'lucide-react'
@@ -25,6 +25,20 @@ export default function PreSurveyPage() {
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
+  const [checking, setChecking] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/user/dashboard')
+      .then(res => res.json())
+      .then(data => {
+        if (data.pre_survey_completed) {
+          router.push('/dashboard')
+        } else {
+          setChecking(false)
+        }
+      })
+      .catch(() => setChecking(false))
+  }, [])
 
   const handleAnswer = (score: number) => {
     const newAnswers = { ...answers, [currentQ]: score }
@@ -102,6 +116,14 @@ export default function PreSurveyPage() {
             {lang === 'th' ? 'กลับสู่แดชบอร์ด' : 'Return to Dashboard'}
           </button>
         </div>
+      </main>
+    )
+  }
+
+  if (checking) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center gradient-bg">
+        <Loader2 className="h-10 w-10 text-primary animate-spin" />
       </main>
     )
   }
