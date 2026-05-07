@@ -56,18 +56,19 @@ export async function POST(request: NextRequest) {
         // Validate required fields
         if (!q.question_en || !q.question_th) continue
 
-        if (q.id && q.id > 0) {
+        // Postgres INTEGER max is 2,147,483,647. Front-end might send Date.now() as temp ID.
+        if (q.id && q.id > 0 && q.id < 2000000000) {
           await client.query(
             `UPDATE ${table} 
-             SET question_en = $1, question_th = $2, question_type = $3, is_required = $4, display_order = $5, is_active = $6
-             WHERE id = $7`,
-            [q.question_en, q.question_th, q.question_type || 'rating', q.is_required ?? true, q.display_order || 0, q.is_active ?? true, q.id]
+             SET question_en = $1, question_th = $2, question_type = $3, options = $4, is_required = $5, display_order = $6, is_active = $7
+             WHERE id = $8`,
+            [q.question_en, q.question_th, q.question_type || 'rating', q.options ? JSON.stringify(q.options) : null, q.is_required ?? true, q.display_order || 0, q.is_active ?? true, q.id]
           )
         } else {
           await client.query(
-            `INSERT INTO ${table} (question_en, question_th, question_type, is_required, display_order, is_active)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [q.question_en, q.question_th, q.question_type || 'rating', q.is_required ?? true, q.display_order || 0, q.is_active ?? true]
+            `INSERT INTO ${table} (question_en, question_th, question_type, options, is_required, display_order, is_active)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [q.question_en, q.question_th, q.question_type || 'rating', q.options ? JSON.stringify(q.options) : null, q.is_required ?? true, q.display_order || 0, q.is_active ?? true]
           )
         }
       }

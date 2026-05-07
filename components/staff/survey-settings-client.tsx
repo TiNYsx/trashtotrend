@@ -82,10 +82,12 @@ export function SurveySettingsClient({
   }
 
   const handleAddQuestion = (q: SurveyQuestion) => {
+    // Generate a temporary negative ID that fits within standard integers
+    const tempId = -Math.floor(Math.random() * 1000000)
     if (activeTab === "pre") {
-      setPreQuestions([...preQuestions, { ...q, id: Date.now() }])
+      setPreQuestions([...preQuestions, { ...q, id: tempId }])
     } else {
-      setPostQuestions([...postQuestions, { ...q, id: Date.now() }])
+      setPostQuestions([...postQuestions, { ...q, id: tempId }])
     }
     setShowAdd(false)
   }
