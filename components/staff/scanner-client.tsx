@@ -85,6 +85,30 @@ async function resolvePreferredCamera() {
   }
 }
 
+async function applyIosStyleResetConstraints(scanner: Html5Qrcode) {
+  try {
+    const capabilities = scanner.getRunningTrackCapabilities()
+    const maxFrameRate =
+      typeof capabilities.frameRate?.max === "number" ? capabilities.frameRate.max : 30
+    const zoomCap = typeof capabilities.zoom === "number" ? capabilities.zoom : undefined
+    const focusCap =
+      typeof capabilities.focusDistance === "number" ? capabilities.focusDistance : undefined
+
+    const constraints: MediaTrackConstraints = {
+      width: { ideal: 1000 },
+      frameRate: { ideal: maxFrameRate },
+      advanced: [
+        ...(zoomCap ? [{ zoom: Math.min(2, zoomCap) } as MediaTrackConstraintSet] : []),
+        ...(focusCap ? [{ focusDistance: 1 } as MediaTrackConstraintSet] : []),
+      ],
+    }
+
+    await scanner.applyVideoConstraints(constraints)
+  } catch {
+    // Ignore reset failures and keep scanning with current stream.
+  }
+}
+
 export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
   const { t, lang } = useLanguage()
   const [selectedCheckpoint, setSelectedCheckpoint] = useState<Checkpoint | null>(null)
@@ -204,22 +228,42 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
         const cameraConfig = await resolvePreferredCamera()
         if (cancelled) return
 
-        await html5Scanner.start(
+        const configs: Array<string | MediaTrackConstraints> = [
+          { facingMode: { exact: "environment" } },
+          { facingMode: "environment" },
           cameraConfig,
-          {
-            fps: 8,
-            aspectRatio: 1,
-            disableFlip: false,
-          },
-          (decodedText) => {
-            if (hasScannedRef.current || !decodedText) return
+        ]
 
-            hasScannedRef.current = true
-            stopScanner()
-            void processScan(decodedText)
-          },
-          () => {}
-        )
+        let started = false
+        for (const config of configs) {
+          try {
+            await html5Scanner.start(
+              config,
+              {
+                fps: 8,
+                aspectRatio: 1,
+                disableFlip: false,
+              },
+              (decodedText) => {
+                if (hasScannedRef.current || !decodedText) return
+
+                hasScannedRef.current = true
+                stopScanner()
+                void processScan(decodedText)
+              },
+              () => {}
+            )
+            started = true
+            break
+          } catch {}
+        }
+
+        if (!started) {
+          throw new Error("Unable to start camera")
+        }
+
+        // iOS/WebKit scanner reset after entering scanning state.
+        await applyIosStyleResetConstraints(html5Scanner)
 
         if (cancelled) {
           stopScanner()
@@ -433,6 +477,18 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
               >
                 {isProcessingImage ? <RefreshCw className="h-4 w-4 animate-spin" /> : <ImageUp className="h-4 w-4" />}
                 {lang === "th" ? "Scan from Photo" : "Scan from Photo"}
+              </button>
+            )}
+
+            {!showManualInput && (
+              <button
+                onClick={() => {
+                  setScanning(false)
+                  setShowManualInput(true)
+                }}
+                className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                Or enter code manually
               </button>
             )}
 
