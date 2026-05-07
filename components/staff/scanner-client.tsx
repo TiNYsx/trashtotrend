@@ -116,8 +116,8 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
         const qrScannerModule = await import('qr-scanner')
         const QrScanner = qrScannerModule.default
         
-        // Set worker path explicitly for bundled apps
-        if (typeof window !== 'undefined') {
+        // Only set worker path once
+        if (typeof window !== 'undefined' && !QrScanner.WORKER_PATH) {
           QrScanner.WORKER_PATH = '/qr-scanner-worker.min.js'
         }
         
@@ -130,9 +130,14 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
           return
         }
 
-        // On iOS, we need to make sure the video is actually ready to play
-        // We'll try to start the scanner and handle potential promise rejection
-        
+        // Cleanup any existing instance just in case
+        if (scannerRef.current) {
+          try {
+            scannerRef.current.destroy()
+            scannerRef.current = null
+          } catch (e) {}
+        }
+
         const onDecode = (scanResult: any) => {
           if (hasScannedRef.current) return
           hasScannedRef.current = true
@@ -169,11 +174,14 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
         scanner = new QrScanner(video, onDecode, options)
         scannerRef.current = scanner
         
+        // On iOS, start() can sometimes fail if called too quickly
+        await new Promise(resolve => setTimeout(resolve, 100))
         await scanner.start()
         
         if (cancelled) {
           scanner.stop()
           scanner.destroy()
+          scannerRef.current = null
           return
         }
         
@@ -199,8 +207,8 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
       }
     }
 
-    // Give the UI a moment to render the video element
-    const timer = setTimeout(startScanner, 500)
+    // Give the UI a moment to render the video element and apply transitions
+    const timer = setTimeout(startScanner, 600)
 
     return () => {
       cancelled = true
@@ -335,20 +343,29 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
 
             {/* Camera view */}
             <div 
-              className={`w-full rounded-xl border border-border bg-foreground/5 overflow-hidden transition-all duration-300 ${
+              className={`relative w-full rounded-xl border border-border bg-black overflow-hidden transition-all duration-300 ${
                 scanning ? 'opacity-100 max-h-[500px]' : 'opacity-0 max-h-0'
               }`}
             >
               <video
                 ref={videoRef}
                 className="w-full"
-                style={{ height: scanning ? "350px" : "0px", objectFit: "cover" }}
+                style={{ 
+                  height: scanning ? "350px" : "0px", 
+                  objectFit: "cover",
+                  display: scanning ? "block" : "none" 
+                }}
                 playsInline
                 muted
                 autoPlay
+                // @ts-ignore
+                webkit-playsinline="true"
               />
               {scanning && (
-                <p className="py-3 text-center text-xs text-muted-foreground">
+                <div className="absolute inset-0 pointer-events-none border-2 border-primary/30 m-8 rounded-lg animate-pulse" />
+              )}
+              {scanning && (
+                <p className="absolute bottom-2 left-0 right-0 text-center text-[10px] text-white/70 bg-black/40 py-1">
                   {cameraStatus || t("positionQR")}
                 </p>
               )}
