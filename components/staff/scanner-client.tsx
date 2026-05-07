@@ -10,7 +10,6 @@ import {
   AlertTriangle,
   ArrowLeft,
   MapPin,
-  Trophy,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -30,8 +29,8 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
   const [cameraStatus, setCameraStatus] = useState<string>("")
   const [manualCode, setManualCode] = useState<string>("")
   const [showManualInput, setShowManualInput] = useState<boolean>(false)
-  const scannerRef = useRef<HTMLDivElement>(null)
-  const html5QrRef = useRef<unknown>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const scannerRef = useRef<any>(null)
   const isScannerRunningRef = useRef(false)
 
   useEffect(() => {
@@ -52,47 +51,44 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
   }, [lang])
 
   useEffect(() => {
-    if (!scanning || !scannerRef.current) return
+    if (!scanning || !videoRef.current) return
 
-    let scanner: { stop: () => Promise<void>; clear: () => void; start: any } | null = null
+    let scanner: any = null
 
     const startScanner = async () => {
       setCameraStatus(lang === "th" ? "กำลังเปิดกล้อง..." : "Starting camera...")
       
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-      if (isIOS) {
-        await new Promise(resolve => setTimeout(resolve, 300))
-      }
-      
-      const { Html5Qrcode } = await import("html5-qrcode")
-      scanner = new Html5Qrcode("qr-reader")
-      html5QrRef.current = scanner
-
       try {
-        await scanner.start(
-          { facingMode: "environment" },
-          { fps: 10 },
-          async (decodedText: string) => {
-            console.log("QR detected:", decodedText)
+        const QrScanner = (await import('qr-scanner')).default
+        
+        const video = videoRef.current!
+        video.playsInline = true
+        video.muted = true
+        video.setAttribute('playsinline', 'true')
+        video.setAttribute('muted', 'true')
+        
+        scanner = new QrScanner(
+          video,
+          (result: any) => {
+            console.log("QR detected:", result.data)
             if (scanner && isScannerRunningRef.current) {
-              try {
-                await (scanner as any).stop()
-              } catch {
-                /* already stopped */
-              } finally {
-                isScannerRunningRef.current = false
-              }
+              scanner.stop().catch(() => {})
+              isScannerRunningRef.current = false
             }
-
             setScanning(false)
             setCameraStatus("")
-            await handleScan(decodedText)
+            handleScan(result.data)
           },
-          (errorMessage: string) => {
-            console.log("Scan frame error:", errorMessage)
+          {
+            preferredCamera: 'environment',
+            maxScansPerSecond: 10,
+            highlightScanRegion: true,
+            highlightCodeOutline: true,
           }
         )
-
+        
+        scannerRef.current = scanner
+        await scanner.start()
         isScannerRunningRef.current = true
         setCameraStatus(lang === "th" ? "กล้องพร้อมใช้งาน - จัด QR ให้อยู่ในกรอบ" : "Camera ready - position QR in frame")
       } catch (err: any) {
@@ -123,14 +119,14 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
       if (scanner) {
         try {
           if (isScannerRunningRef.current) {
-            ;(scanner as any).stop().catch(() => {})
+            scanner.stop().catch(() => {})
             isScannerRunningRef.current = false
           }
         } catch {
           /* ignore */
         }
         try {
-          scanner.clear()
+          scanner.destroy()
         } catch {
           /* ignore */
         }
@@ -141,7 +137,6 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
   const handleScan = async (decodedText: string) => {
     if (!selectedCheckpoint) return
 
-    // Extract token from URL if full URL is scanned
     let qrToken = decodedText
     if (decodedText.includes('/scan/')) {
       qrToken = decodedText.split('/scan/')[1]
@@ -289,11 +284,12 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
             {/* Camera view */}
             {scanning && (
               <div className="w-full rounded-xl border border-border bg-foreground/5">
-                <div
-                  id="qr-reader"
-                  ref={scannerRef}
+                <video
+                  ref={videoRef}
                   className="w-full"
-                  style={{ height: "350px" }}
+                  style={{ height: "350px", objectFit: "cover" }}
+                  playsInline
+                  muted
                 />
                 <p className="py-3 text-center text-xs text-muted-foreground">
                   {cameraStatus || t("positionQR")}
@@ -413,9 +409,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
               <button
                 onClick={() => {
                   setScanning(false)
-                  const s = html5QrRef.current as {
-                    stop: () => Promise<void>
-                  } | null
+                  const s = scannerRef.current
                   if (s) s.stop().catch(() => {})
                 }}
                 className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"

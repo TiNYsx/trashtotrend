@@ -143,20 +143,11 @@
   animation: fade-in-up 0.4s ease-out forwards;
 }
 
-/* html5-qrcode scanner fixes for iOS */
-#qr-reader {
-  width: 100% !important;
-  height: 100% !important;
-}
-
-#qr-reader video {
+/* QR scanner video fixes for iOS */
+video[playsinline] {
   width: 100% !important;
   height: 100% !important;
   object-fit: cover !important;
-  -webkit-playsinline: true !important;
-  playsinline: true !important;
-}
-
-#qr-reader canvas {
-  display: none !important;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
