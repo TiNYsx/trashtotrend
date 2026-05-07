@@ -112,68 +112,84 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
   useEffect(() => {
     if (!scanning) return
 
-    let scanner: any = null
     let cancelled = false
+    let videoStream: MediaStream | null = null
+    let decodeTimeout: NodeJS.Timeout | null = null
 
     const startScanner = async () => {
-      addLog("Starting QrScanner (No Worker)...")
+      addLog("Loading ZXing...")
       hasScannedRef.current = false
       
       try {
-        const qrScannerModule = await import('qr-scanner')
-        const QrScanner = qrScannerModule.default
-        
+        // Load ZXing from CDN if not already loaded
+        if (!(window as any).ZXing) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement("script")
+            script.src = "https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"
+            script.onload = resolve
+            script.onerror = reject
+            document.head.appendChild(script)
+          })
+        }
+
         if (cancelled) return
+        
+        const ZXing = (window as any).ZXing
+        const codeReader = new ZXing.BrowserQRCodeReader()
+        addLog("ZXing Ready")
 
         const video = videoRef.current
         if (!video) {
-          addLog("Video element not found")
+          addLog("Video element missing")
           return
         }
 
-        addLog("Initializing scanner...")
-        
-        scanner = new QrScanner(
-          video,
-          (scanResult: any) => {
-            if (hasScannedRef.current) return
-            
-            let decodedText: string
-            if (typeof scanResult === 'string') {
-              decodedText = scanResult
-            } else {
-              decodedText = scanResult.data || String(scanResult)
-            }
-            
-            if (decodedText && decodedText !== 'undefined') {
-              hasScannedRef.current = true
-              addLog("Scanned: " + decodedText.substring(0, 10))
-              scanner.stop()
-              processScan(decodedText)
-            }
-          },
-          {
-            preferredCamera: 'environment',
-            maxScansPerSecond: 10,
-            highlightScanRegion: true,
-            highlightCodeOutline: true,
-            // DO NOT use worker for iOS - it's often more stable on main thread
-            calculateScanRegion: (v) => {
-              return {
-                x: 0,
-                y: 0,
-                width: v.videoWidth,
-                height: v.videoHeight,
-                downScaleFactor: 1
-              }
-            }
-          }
-        )
-
         addLog("Starting camera...")
-        await scanner.start()
-        addLog("Camera started")
+        videoStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" }
+        })
         
+        if (cancelled) {
+          videoStream.getTracks().forEach(t => t.stop())
+          return
+        }
+
+        video.srcObject = videoStream
+        // Critical for iOS
+        video.setAttribute("playsinline", "true")
+        video.setAttribute("muted", "true")
+        video.setAttribute("autoplay", "true")
+        
+        await video.play()
+        addLog("Video stream active")
+
+        const decodeLoop = async () => {
+          if (cancelled || hasScannedRef.current) return
+          
+          try {
+            // Use decodeFromVideoElement which is very robust
+            const result = await codeReader.decodeFromVideoElement(video)
+            if (result && !hasScannedRef.current) {
+              const text = result.getText()
+              addLog("Scanned!")
+              hasScannedRef.current = true
+              
+              if (videoStream) {
+                videoStream.getTracks().forEach(t => t.stop())
+              }
+              processScan(text)
+              return
+            }
+          } catch (e) {
+            // No QR found in frame
+          }
+          
+          if (!cancelled && !hasScannedRef.current) {
+            decodeTimeout = setTimeout(decodeLoop, 300)
+          }
+        }
+
+        decodeLoop()
         setCameraStatus(lang === "th" ? "กล้องพร้อมใช้งาน - จัด QR ให้อยู่ในกรอบ" : "Camera ready - position QR in frame")
       } catch (err: any) {
         addLog("Error: " + (err.message || String(err)))
@@ -187,16 +203,15 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
       }
     }
 
-    // Small delay to ensure video element is ready
     const timer = setTimeout(startScanner, 500)
 
     return () => {
       cancelled = true
       clearTimeout(timer)
-      addLog("Cleanup")
-      if (scanner) {
-        scanner.stop()
-        scanner.destroy()
+      if (decodeTimeout) clearTimeout(decodeTimeout)
+      addLog("Cleaning up...")
+      if (videoStream) {
+        videoStream.getTracks().forEach(t => t.stop())
       }
     }
   }, [scanning, lang, t, processScan])
