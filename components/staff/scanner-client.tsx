@@ -48,17 +48,6 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
     }
   }, [lang])
 
-  const ensureCameraPermission = async () => {
-    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) return false
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-      stream.getTracks().forEach((t) => t.stop())
-      return true
-    } catch {
-      return false
-    }
-  }
-
   useEffect(() => {
     if (!scanning || !scannerRef.current) return
 
@@ -93,13 +82,24 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
         )
 
         isScannerRunningRef.current = true
-      } catch {
+      } catch (err: any) {
         isScannerRunningRef.current = false
         setScanning(false)
-        setResult({
-          type: "error",
-          message: t("cameraDenied"),
-        })
+        console.error("Scanner start error:", err)
+        const errorMessage = err?.message || err?.toString?.() || ""
+        if (errorMessage.includes("Permission") || errorMessage.includes("permission") || errorMessage.includes("denied")) {
+          setResult({
+            type: "error",
+            message: t("cameraDenied"),
+          })
+        } else {
+          setResult({
+            type: "error",
+            message: lang === "th"
+              ? `ไม่สามารถเปิดกล้องได้: ${errorMessage}`
+              : `Could not start camera: ${errorMessage}`,
+          })
+        }
       }
     }
 
@@ -122,7 +122,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
         }
       }
     }
-  }, [scanning])
+  }, [scanning, lang, t])
 
   const handleScan = async (decodedText: string) => {
     if (!selectedCheckpoint) return
@@ -169,14 +169,13 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
       return
     }
 
-    const allowed = await ensureCameraPermission()
-    if (!allowed) {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
       setResult({
         type: "error",
         message:
           lang === "th"
-            ? "โปรดอนุญาตการเข้าถึงกล้องในเบราว์เซอร์ของคุณ"
-            : "Please allow camera access in your browser.",
+            ? "เบราว์เซอร์ของคุณไม่รองรับการเข้าถึงกล้อง"
+            : "Your browser does not support camera access.",
       })
       return
     }
