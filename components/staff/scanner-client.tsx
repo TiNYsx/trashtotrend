@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import type QrScanner from "qr-scanner"
+import type { Html5Qrcode } from "html5-qrcode"
 
 type Checkpoint = { id: number; slug: string; name_en: string; name_th: string }
 type ScanResult = {
@@ -24,6 +25,7 @@ type ScanResult = {
 }
 
 const QR_WORKER_PATH = "/qr-scanner-worker.min.js"
+const HTML5_QR_READER_ID = "staff-html5-qr-reader"
 
 function extractQrToken(decodedText: string) {
   const text = decodedText.trim()
@@ -62,6 +64,21 @@ async function loadQrScanner() {
   return Scanner
 }
 
+async function loadHtml5Qrcode() {
+  const module = await import("html5-qrcode")
+  return module.Html5Qrcode
+}
+
+function isIOSDevice() {
+  if (typeof navigator === "undefined") return false
+
+  const platform = navigator.platform || ""
+  const userAgent = navigator.userAgent || ""
+  const isiPadOS = platform === "MacIntel" && navigator.maxTouchPoints > 1
+
+  return /iPad|iPhone|iPod/.test(userAgent) || isiPadOS
+}
+
 export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
   const { t, lang } = useLanguage()
   const [selectedCheckpoint, setSelectedCheckpoint] = useState<Checkpoint | null>(null)
@@ -75,6 +92,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const scannerRef = useRef<QrScanner | null>(null)
+  const html5ScannerRef = useRef<Html5Qrcode | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const hasScannedRef = useRef(false)
 
@@ -93,7 +111,9 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
 
   const stopScanner = useCallback(() => {
     const scanner = scannerRef.current
+    const html5Scanner = html5ScannerRef.current
     scannerRef.current = null
+    html5ScannerRef.current = null
 
     if (scanner) {
       try {
@@ -102,6 +122,26 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
         // The scanner may already be stopped after a successful decode.
       }
       scanner.destroy()
+    }
+
+    if (html5Scanner) {
+      if (html5Scanner.isScanning) {
+        html5Scanner.stop().catch(() => {
+          // The scanner may already be stopped by the time React cleans up.
+        }).finally(() => {
+          try {
+            html5Scanner.clear()
+          } catch {
+            // Ignore cleanup races.
+          }
+        })
+      } else {
+        try {
+          html5Scanner.clear()
+        } catch {
+          // Ignore cleanup races.
+        }
+      }
     }
   }, [])
 
@@ -161,42 +201,81 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
       hasScannedRef.current = false
 
       try {
-        const video = videoRef.current
-        if (!video) return
+        if (isIOSDevice()) {
+          const Html5Scanner = await loadHtml5Qrcode()
+          if (cancelled) return
 
-        video.setAttribute("playsinline", "true")
-        video.setAttribute("webkit-playsinline", "true")
-        video.muted = true
+          const html5Scanner = new Html5Scanner(HTML5_QR_READER_ID, {
+            verbose: false,
+            useBarCodeDetectorIfSupported: true,
+          })
+          html5ScannerRef.current = html5Scanner
 
-        const Scanner = await loadQrScanner()
-        if (cancelled) return
-
-        const scanner = new Scanner(
-          video,
-          (scanResult) => {
-            if (hasScannedRef.current) return
-
-            const decodedText = getScanText(scanResult)
-            if (!decodedText) return
-
-            hasScannedRef.current = true
-            stopScanner()
-            void processScan(decodedText)
-          },
-          {
-            preferredCamera: "environment",
-            maxScansPerSecond: 10,
-            highlightScanRegion: true,
-            highlightCodeOutline: true,
-            returnDetailedScanResult: true,
-            onDecodeError: () => {
-              // No QR in frame yet; keep scanning.
+          await html5Scanner.start(
+            { facingMode: "environment" },
+            {
+              fps: 10,
+              qrbox: (viewfinderWidth, viewfinderHeight) => {
+                const edge = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.82)
+                return { width: edge, height: edge }
+              },
+              aspectRatio: 1,
+              disableFlip: true,
+              videoConstraints: {
+                facingMode: { ideal: "environment" },
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+              },
             },
-          }
-        )
+            (decodedText) => {
+              if (hasScannedRef.current || !decodedText) return
 
-        scannerRef.current = scanner
-        await scanner.start()
+              hasScannedRef.current = true
+              stopScanner()
+              void processScan(decodedText)
+            },
+            () => {
+              // No QR in frame yet; keep scanning.
+            }
+          )
+        } else {
+          const video = videoRef.current
+          if (!video) return
+
+          video.setAttribute("playsinline", "true")
+          video.setAttribute("webkit-playsinline", "true")
+          video.muted = true
+
+          const Scanner = await loadQrScanner()
+          if (cancelled) return
+
+          const scanner = new Scanner(
+            video,
+            (scanResult) => {
+              if (hasScannedRef.current) return
+
+              const decodedText = getScanText(scanResult)
+              if (!decodedText) return
+
+              hasScannedRef.current = true
+              stopScanner()
+              void processScan(decodedText)
+            },
+            {
+              preferredCamera: "environment",
+              maxScansPerSecond: 10,
+              highlightScanRegion: true,
+              highlightCodeOutline: true,
+              returnDetailedScanResult: true,
+              onDecodeError: () => {
+                // No QR in frame yet; keep scanning.
+              },
+            }
+          )
+
+          scannerRef.current = scanner
+          await scanner.start()
+        }
 
         if (cancelled) {
           stopScanner()
@@ -228,6 +307,34 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
     }
   }, [lang, processScan, scanning, stopScanner, t])
 
+  const scanImageWithHtml5 = async (file: File) => {
+    const Html5Scanner = await loadHtml5Qrcode()
+    const scanner = new Html5Scanner(`${HTML5_QR_READER_ID}-file`, {
+      verbose: false,
+      useBarCodeDetectorIfSupported: true,
+    })
+
+    try {
+      const result = await scanner.scanFileV2(file, false)
+      return result.decodedText
+    } finally {
+      try {
+        scanner.clear()
+      } catch {
+        // The file scanner may not have rendered UI.
+      }
+    }
+  }
+
+  const scanImageWithQrScanner = async (file: File) => {
+    const Scanner = await loadQrScanner()
+    const scanResult = await Scanner.scanImage(file, {
+      returnDetailedScanResult: true,
+      alsoTryWithoutScanRegion: true,
+    })
+    return getScanText(scanResult)
+  }
+
   const handleImageScan = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -236,12 +343,19 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
     setResult(null)
 
     try {
-      const Scanner = await loadQrScanner()
-      const scanResult = await Scanner.scanImage(file, {
-        returnDetailedScanResult: true,
-        alsoTryWithoutScanRegion: true,
-      })
-      await processScan(getScanText(scanResult))
+      let decodedText = ""
+
+      try {
+        decodedText = isIOSDevice()
+          ? await scanImageWithHtml5(file)
+          : await scanImageWithQrScanner(file)
+      } catch {
+        decodedText = isIOSDevice()
+          ? await scanImageWithQrScanner(file)
+          : await scanImageWithHtml5(file)
+      }
+
+      await processScan(decodedText)
     } catch {
       setResult({
         type: "error",
@@ -385,7 +499,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
             >
               <video
                 ref={videoRef}
-                className="block w-full"
+                className={isIOSDevice() ? "hidden" : "block w-full"}
                 style={{
                   height: scanning ? "350px" : "0px",
                   objectFit: "cover",
@@ -394,9 +508,16 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
                 muted
                 autoPlay
               />
+              <div
+                id={HTML5_QR_READER_ID}
+                className={isIOSDevice() && scanning ? "w-full min-h-[350px]" : "hidden"}
+              />
+              <div id={`${HTML5_QR_READER_ID}-file`} className="hidden" />
               {scanning && (
                 <>
-                  <div className="absolute inset-8 rounded-lg border-2 border-primary/40 pointer-events-none" />
+                  {!isIOSDevice() && (
+                    <div className="absolute inset-8 rounded-lg border-2 border-primary/40 pointer-events-none" />
+                  )}
                   <p className="absolute bottom-2 left-0 right-0 z-10 bg-black/45 px-3 py-1 text-center text-[10px] text-white/80">
                     {cameraStatus || t("positionQR")}
                   </p>
