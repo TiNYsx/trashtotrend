@@ -77,10 +77,12 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
       const data = await res.json()
       console.log("[Scan] API response:", res.status, data)
 
-      if (res.ok) {
+      console.log("[Scan] Response OK:", res.ok, "Data:", data)
+      
+      if (res.ok && data.success) {
         setResult({
           type: "success",
-          message: t("checkpointCompleted"),
+          message: `${t("checkpointCompleted")} (Booth: ${data.booth_id})`,
           userName: data.customer_email,
         })
       } else if (data.alreadyStamped) {
@@ -88,8 +90,10 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
           type: "already",
           message: `${data.customer_email || ""} ${lang === "th" ? "ประทับตราที่บูธนี้แล้ว" : "already stamped at this booth"}`
         })
+      } else if (data.error) {
+        setResult({ type: "error", message: data.error })
       } else {
-        setResult({ type: "error", message: data.error || t("scanFailed") })
+        setResult({ type: "error", message: `Unexpected response: ${JSON.stringify(data)}` })
       }
     } catch (err) {
       console.error("[Scan] API error:", err)
@@ -98,14 +102,14 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
   }, [selectedCheckpoint, lang, t])
 
   useEffect(() => {
-    if (!scanning || !videoRef.current) return
+    if (!scanning) return
 
     let scanner: any = null
     let cancelled = false
 
     const startScanner = async () => {
-      console.log("[Scanner] Starting...")
-      setCameraStatus(lang === "th" ? "กำลังเปิดกล้อง..." : "Starting camera...")
+      console.log("[Scanner] Attempting to start...")
+      setCameraStatus(lang === "th" ? "กำลังเตรียมกล้อง..." : "Preparing camera...")
       hasScannedRef.current = false
       
       try {
@@ -119,68 +123,56 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
         
         if (cancelled) return
 
-        const video = videoRef.current!
-        
-        scanner = new QrScanner(
-          video,
-          (scanResult: any) => {
-            try {
-              // Prevent duplicate scans
-              if (hasScannedRef.current) {
-                console.log("[Scanner] Duplicate ignored")
-                return
-              }
-              hasScannedRef.current = true
-              
-              // Handle both string and object result formats
-              let decodedText: string
-              if (typeof scanResult === 'string') {
-                decodedText = scanResult
-              } else if (scanResult && typeof scanResult === 'object') {
-                decodedText = scanResult.data || scanResult.text || String(scanResult)
-              } else {
-                decodedText = String(scanResult)
-              }
-              
-              console.log("[Scanner] Detected:", decodedText)
-              
-              if (!decodedText || decodedText === 'undefined' || decodedText === 'null') {
-                console.log("[Scanner] Empty result, ignoring")
-                hasScannedRef.current = false
-                return
-              }
-              
-              // Stop scanner in next tick to avoid race condition
-              setTimeout(() => {
-                if (scanner) {
-                  scanner.stop().catch((e: any) => console.log("[Scanner] Stop error:", e))
-                }
-                processScan(decodedText)
-              }, 100)
-            } catch (callbackErr) {
-              console.error("[Scanner] Callback error:", callbackErr)
-              hasScannedRef.current = false
-            }
-          },
-          {
-            preferredCamera: 'environment',
-            maxScansPerSecond: 5,
-            highlightScanRegion: true,
-            highlightCodeOutline: true,
-            returnDetailedScanResult: true,
-          }
-        )
-        
-        if (cancelled) {
-          scanner.destroy()
+        const video = videoRef.current
+        if (!video) {
+          console.log("[Scanner] Video element not found, retrying...")
+          if (!cancelled) setTimeout(startScanner, 200)
           return
         }
+
+        // On iOS, we need to make sure the video is actually ready to play
+        // We'll try to start the scanner and handle potential promise rejection
         
+        const onDecode = (scanResult: any) => {
+          if (hasScannedRef.current) return
+          hasScannedRef.current = true
+          
+          let decodedText: string
+          if (typeof scanResult === 'string') {
+            decodedText = scanResult
+          } else if (scanResult && typeof scanResult === 'object') {
+            decodedText = scanResult.data || scanResult.text || String(scanResult)
+          } else {
+            decodedText = String(scanResult)
+          }
+          
+          console.log("[Scanner] Decoded:", decodedText)
+          
+          if (!decodedText || decodedText === 'undefined') {
+            hasScannedRef.current = false
+            return
+          }
+          
+          if (scanner) {
+            scanner.stop()
+          }
+          processScan(decodedText)
+        }
+
+        const options = {
+          preferredCamera: 'environment' as const,
+          maxScansPerSecond: 10,
+          highlightScanRegion: true,
+          highlightCodeOutline: true,
+        }
+
+        scanner = new QrScanner(video, onDecode, options)
         scannerRef.current = scanner
+        
         await scanner.start()
         
         if (cancelled) {
-          scanner.stop().catch(() => {})
+          scanner.stop()
           scanner.destroy()
           return
         }
@@ -192,8 +184,8 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
         if (!cancelled) {
           setScanning(false)
           setCameraStatus("")
-          const errorMessage = err?.message || err?.toString?.() || ""
-          if (errorMessage.includes("Permission") || errorMessage.includes("permission") || errorMessage.includes("denied")) {
+          const errorMessage = err?.message || String(err)
+          if (errorMessage.includes("Permission") || errorMessage.includes("permission")) {
             setResult({ type: "error", message: t("cameraDenied") })
           } else {
             setResult({
@@ -207,14 +199,20 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
       }
     }
 
-    startScanner()
+    // Give the UI a moment to render the video element
+    const timer = setTimeout(startScanner, 500)
 
     return () => {
       cancelled = true
-      console.log("[Scanner] Cleanup")
+      clearTimeout(timer)
+      console.log("[Scanner] Cleaning up")
       if (scanner) {
-        scanner.stop().catch(() => {})
-        scanner.destroy()
+        try {
+          scanner.stop()
+          scanner.destroy()
+        } catch (e) {
+          console.error("[Scanner] Stop error:", e)
+        }
       }
       scannerRef.current = null
     }
