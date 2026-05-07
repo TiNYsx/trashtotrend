@@ -33,16 +33,18 @@ export async function GET() {
 
     const personalityMap = new Map(personalityTypes.map(p => [p.type_code, `${p.name_en} (${p.name_th})`]))
 
-    // 3. Get quiz responses for all customers
+    // 3. Get quiz responses for all customers (only personality/journey quiz)
     const quizResponses = await getMany<{
       customer_id: number
       question_id: number
       answer: string
     }>(`
-      SELECT customer_id, question_id, answer
-      FROM quiz_responses
-      WHERE customer_id IS NOT NULL
-      ORDER BY customer_id, question_id
+      SELECT qr.customer_id, qr.question_id, qr.answer
+      FROM quiz_responses qr
+      JOIN quiz_questions qq ON qr.question_id = qq.id
+      WHERE qr.customer_id IS NOT NULL 
+        AND (qr.booth_id IS NULL OR qq.quiz_category = 'journey')
+      ORDER BY qr.customer_id, qr.question_id
     `)
 
     // Calculate personality type for each customer
