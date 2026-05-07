@@ -10,12 +10,9 @@ import {
   AlertTriangle,
   ArrowLeft,
   MapPin,
-  RefreshCw,
-  ImageUp,
 } from "lucide-react"
 import Link from "next/link"
 import type QrScanner from "qr-scanner"
-import type { Html5Qrcode } from "html5-qrcode"
 
 type Checkpoint = { id: number; slug: string; name_en: string; name_th: string }
 type ScanResult = {
@@ -25,8 +22,6 @@ type ScanResult = {
 }
 
 const QR_WORKER_PATH = "/qr-scanner-worker.min.js"
-const HTML5_QR_READER_ID = "staff-html5-qr-reader"
-const HTML5_QR_FILE_READER_ID = "staff-html5-qr-file-reader"
 
 function extractQrToken(decodedText: string) {
   const text = decodedText.trim()
@@ -54,8 +49,12 @@ function extractQrToken(decodedText: string) {
   return text
 }
 
-function getScanText(scanResult: string | QrScanner.ScanResult) {
-  return typeof scanResult === "string" ? scanResult : scanResult.data
+function isIOSDevice() {
+  if (typeof navigator === "undefined") return false
+  const platform = navigator.platform || ""
+  const userAgent = navigator.userAgent || ""
+  const isiPadOS = platform === "MacIntel" && navigator.maxTouchPoints > 1
+  return /iPad|iPhone|iPod/.test(userAgent) || isiPadOS
 }
 
 async function loadQrScanner() {
@@ -63,50 +62,6 @@ async function loadQrScanner() {
   const Scanner = module.default
   Scanner.WORKER_PATH = QR_WORKER_PATH
   return Scanner
-}
-
-async function loadHtml5Qrcode() {
-  const module = await import("html5-qrcode")
-  return module.Html5Qrcode
-}
-
-async function resolvePreferredCamera() {
-  const Html5Scanner = await loadHtml5Qrcode()
-  try {
-    const cameras = await Html5Scanner.getCameras()
-    if (!cameras.length) return { facingMode: "environment" as const }
-
-    const backCamera =
-      cameras.find((camera) => /back|rear|environment/i.test(camera.label)) || cameras[cameras.length - 1]
-
-    return { deviceId: { exact: backCamera.id } }
-  } catch {
-    return { facingMode: "environment" as const }
-  }
-}
-
-async function applyIosStyleResetConstraints(scanner: Html5Qrcode) {
-  try {
-    const capabilities = scanner.getRunningTrackCapabilities()
-    const maxFrameRate =
-      typeof capabilities.frameRate?.max === "number" ? capabilities.frameRate.max : 30
-    const zoomCap = typeof capabilities.zoom === "number" ? capabilities.zoom : undefined
-    const focusCap =
-      typeof capabilities.focusDistance === "number" ? capabilities.focusDistance : undefined
-
-    const constraints: MediaTrackConstraints = {
-      width: { ideal: 1000 },
-      frameRate: { ideal: maxFrameRate },
-      advanced: [
-        ...(zoomCap ? [{ zoom: Math.min(2, zoomCap) } as MediaTrackConstraintSet] : []),
-        ...(focusCap ? [{ focusDistance: 1 } as MediaTrackConstraintSet] : []),
-      ],
-    }
-
-    await scanner.applyVideoConstraints(constraints)
-  } catch {
-    // Ignore reset failures and keep scanning with current stream.
-  }
 }
 
 export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
@@ -117,11 +72,9 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
   const [insecureWarning, setInsecureWarning] = useState<string | null>(null)
   const [cameraStatus, setCameraStatus] = useState("")
   const [manualCode, setManualCode] = useState("")
-  const [showManualInput, setShowManualInput] = useState(false)
-  const [isProcessingImage, setIsProcessingImage] = useState(false)
 
-  const html5ScannerRef = useRef<Html5Qrcode | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const scannerRef = useRef<QrScanner | null>(null)
   const hasScannedRef = useRef(false)
 
   useEffect(() => {
@@ -138,25 +91,15 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
   }, [lang])
 
   const stopScanner = useCallback(() => {
-    const html5Scanner = html5ScannerRef.current
-    html5ScannerRef.current = null
-
-    if (!html5Scanner) return
-
-    if (html5Scanner.isScanning) {
-      html5Scanner
-        .stop()
-        .catch(() => {})
-        .finally(() => {
-          try {
-            html5Scanner.clear()
-          } catch {}
-        })
-      return
-    }
+    const scanner = scannerRef.current
+    scannerRef.current = null
+    if (!scanner) return
 
     try {
-      html5Scanner.clear()
+      scanner.stop()
+    } catch {}
+    try {
+      scanner.destroy()
     } catch {}
   }, [])
 
@@ -213,67 +156,53 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
     let cancelled = false
 
     const startScanner = async () => {
-      setCameraStatus("Preparing camera...")
       hasScannedRef.current = false
 
-      try {
-        const Html5Scanner = await loadHtml5Qrcode()
-        if (cancelled) return
-
-        const html5Scanner = new Html5Scanner(HTML5_QR_READER_ID, {
-          verbose: false,
-          useBarCodeDetectorIfSupported: false,
+      if (isIOSDevice()) {
+        setScanning(false)
+        setCameraStatus("")
+        setResult({
+          type: "error",
+          message: "iOS camera scanning is disabled in this build. Please use manual QR input below.",
         })
-        html5ScannerRef.current = html5Scanner
-        const cameraConfig = await resolvePreferredCamera()
+        return
+      }
+
+      try {
+        setCameraStatus("Preparing camera...")
+        const video = videoRef.current
+        if (!video) return
+
+        const Scanner = await loadQrScanner()
         if (cancelled) return
 
-        const configs: Array<string | MediaTrackConstraints> = [
-          { facingMode: { exact: "environment" } },
-          { facingMode: "environment" },
-          cameraConfig,
-        ]
+        const scanner = new Scanner(
+          video,
+          (scanResult) => {
+            if (hasScannedRef.current) return
+            const decodedText =
+              typeof scanResult === "string" ? scanResult : scanResult.data
+            if (!decodedText) return
 
-        let started = false
-        for (const config of configs) {
-          try {
-            await html5Scanner.start(
-              config,
-              {
-                fps: 8,
-                aspectRatio: 1,
-                disableFlip: false,
-              },
-              (decodedText) => {
-                if (hasScannedRef.current || !decodedText) return
+            hasScannedRef.current = true
+            stopScanner()
+            void processScan(decodedText)
+          },
+          {
+            preferredCamera: "environment",
+            maxScansPerSecond: 10,
+            highlightScanRegion: true,
+            highlightCodeOutline: true,
+            returnDetailedScanResult: true,
+            onDecodeError: () => {},
+          }
+        )
 
-                hasScannedRef.current = true
-                stopScanner()
-                void processScan(decodedText)
-              },
-              () => {}
-            )
-            started = true
-            break
-          } catch {}
-        }
-
-        if (!started) {
-          throw new Error("Unable to start camera")
-        }
-
-        // iOS/WebKit scanner reset after entering scanning state.
-        await applyIosStyleResetConstraints(html5Scanner)
-
-        if (cancelled) {
-          stopScanner()
-          return
-        }
-
+        scannerRef.current = scanner
+        await scanner.start()
         setCameraStatus("Camera ready. Position QR in frame.")
       } catch (err) {
         if (cancelled) return
-
         setScanning(false)
         setCameraStatus("")
         setResult({
@@ -287,7 +216,6 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
     }
 
     const timer = window.setTimeout(startScanner, 150)
-
     return () => {
       cancelled = true
       window.clearTimeout(timer)
@@ -295,69 +223,14 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
     }
   }, [processScan, scanning, stopScanner, t])
 
-  const scanImageWithHtml5 = async (file: File) => {
-    const Html5Scanner = await loadHtml5Qrcode()
-    const scanner = new Html5Scanner(HTML5_QR_FILE_READER_ID, {
-      verbose: false,
-      useBarCodeDetectorIfSupported: false,
-    })
-
-    try {
-      const result = await scanner.scanFileV2(file, false)
-      return result.decodedText
-    } finally {
-      try {
-        scanner.clear()
-      } catch {}
-    }
-  }
-
-  const scanImageWithQrScanner = async (file: File) => {
-    const Scanner = await loadQrScanner()
-    const scanResult = await Scanner.scanImage(file, {
-      returnDetailedScanResult: true,
-      alsoTryWithoutScanRegion: true,
-    })
-    return getScanText(scanResult)
-  }
-
-  const handleImageScan = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    setIsProcessingImage(true)
-    setResult(null)
-
-    try {
-      let decodedText = ""
-      try {
-        decodedText = await scanImageWithHtml5(file)
-      } catch {
-        decodedText = await scanImageWithQrScanner(file)
-      }
-      await processScan(decodedText)
-    } catch {
-      setResult({
-        type: "error",
-        message: "No QR code found in the image. Keep the full QR visible and avoid glare.",
-      })
-    } finally {
-      setIsProcessingImage(false)
-      if (fileInputRef.current) fileInputRef.current.value = ""
-    }
-  }
-
   const handleManualScan = async () => {
     if (!manualCode.trim()) return
-
     await processScan(manualCode.trim())
     setManualCode("")
-    setShowManualInput(false)
   }
 
   const startNewScan = async () => {
     setResult(null)
-    setShowManualInput(false)
     hasScannedRef.current = false
 
     if (insecureWarning) {
@@ -438,7 +311,6 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
                   setSelectedCheckpoint(null)
                   setScanning(false)
                   setResult(null)
-                  setShowManualInput(false)
                 }}
                 className="ml-2 text-xs text-accent hover:text-accent/80"
               >
@@ -446,80 +318,53 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
               </button>
             </div>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              capture="environment"
-              className="hidden"
-              onChange={handleImageScan}
-            />
+            <div className="w-full flex flex-col gap-3">
+              <input
+                type="text"
+                value={manualCode}
+                onChange={(e) => setManualCode(e.target.value)}
+                placeholder="Enter QR code manually (ftt_...)"
+                className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void handleManualScan()
+                }}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleManualScan}
+                  disabled={!manualCode.trim()}
+                  className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                >
+                  Submit Code
+                </button>
+                <button
+                  onClick={() => setManualCode("")}
+                  className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
 
             <div
               className={`relative w-full overflow-hidden rounded-xl border border-border bg-black transition-all duration-300 ${
                 scanning ? "opacity-100 max-h-[520px]" : "opacity-0 max-h-0"
               }`}
             >
-              <div id={HTML5_QR_READER_ID} className={scanning ? "w-full min-h-[350px]" : "hidden"} />
-              <div id={HTML5_QR_FILE_READER_ID} className="hidden" />
+              <video
+                ref={videoRef}
+                className="block w-full"
+                style={{ height: scanning ? "350px" : "0px", objectFit: "cover" }}
+                playsInline
+                muted
+                autoPlay
+              />
               {scanning && (
                 <p className="absolute bottom-2 left-0 right-0 z-10 bg-black/45 px-3 py-1 text-center text-[10px] text-white/80">
                   {cameraStatus || t("positionQR")}
                 </p>
               )}
             </div>
-
-            {scanning && (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isProcessingImage}
-                className="flex h-11 items-center gap-2 rounded-full border border-border bg-card px-5 text-sm font-semibold text-foreground shadow-sm disabled:opacity-50"
-              >
-                {isProcessingImage ? <RefreshCw className="h-4 w-4 animate-spin" /> : <ImageUp className="h-4 w-4" />}
-                {lang === "th" ? "Scan from Photo" : "Scan from Photo"}
-              </button>
-            )}
-
-            {!showManualInput && (
-              <button
-                onClick={() => {
-                  setScanning(false)
-                  setShowManualInput(true)
-                }}
-                className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-              >
-                Or enter code manually
-              </button>
-            )}
-
-            {!scanning && showManualInput && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full flex flex-col gap-3">
-                <input
-                  type="text"
-                  value={manualCode}
-                  onChange={(e) => setManualCode(e.target.value)}
-                  placeholder="Enter QR code manually"
-                  className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") void handleManualScan()
-                  }}
-                />
-                <div className="flex gap-2">
-                  <button onClick={handleManualScan} className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
-                    Submit
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowManualInput(false)
-                      setManualCode("")
-                    }}
-                    className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground"
-                  >
-                    {t("cancel")}
-                  </button>
-                </div>
-              </motion.div>
-            )}
 
             <AnimatePresence mode="wait">
               {result && (
@@ -558,30 +403,14 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
               )}
             </AnimatePresence>
 
-            {!scanning && !showManualInput && (
-              <div className="flex flex-col items-center gap-3">
-                <button
-                  onClick={startNewScan}
-                  className="flex h-14 items-center gap-3 rounded-full bg-primary px-8 text-sm font-semibold text-primary-foreground shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl glow-primary"
-                >
-                  <Camera className="h-5 w-5" />
-                  {result ? t("scanAgain") : t("startScanning")}
-                </button>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isProcessingImage}
-                  className="flex items-center gap-2 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline disabled:opacity-50"
-                >
-                  {isProcessingImage && <RefreshCw className="h-3 w-3 animate-spin" />}
-                  Or scan from a photo
-                </button>
-                <button
-                  onClick={() => setShowManualInput(true)}
-                  className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                >
-                  Or enter code manually
-                </button>
-              </div>
+            {!scanning && (
+              <button
+                onClick={startNewScan}
+                className="flex h-14 items-center gap-3 rounded-full bg-primary px-8 text-sm font-semibold text-primary-foreground shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl glow-primary"
+              >
+                <Camera className="h-5 w-5" />
+                {result ? t("scanAgain") : "Start Android Camera Scan"}
+              </button>
             )}
 
             {scanning && (
@@ -595,24 +424,6 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
           </motion.div>
         )}
       </div>
-      <style jsx global>{`
-        #${HTML5_QR_READER_ID},
-        #${HTML5_QR_READER_ID}__scan_region {
-          width: 100%;
-        }
-
-        #${HTML5_QR_READER_ID} video {
-          width: 100% !important;
-          height: auto !important;
-          object-fit: cover !important;
-          transform: none !important;
-          -webkit-transform: none !important;
-        }
-
-        #${HTML5_QR_READER_ID}__dashboard_section_csr {
-          display: none !important;
-        }
-      `}</style>
     </div>
   )
 }
