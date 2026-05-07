@@ -47,7 +47,7 @@ export function SurveySettingsClient({
     const data = activeTab === "pre" ? preQuestions : postQuestions
     
     try {
-      const res = await fetch(`/api/survey/${activeTab}`, {
+      const res = await fetch(`/api/survey?type=${activeTab}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ questions: data })
@@ -74,7 +74,7 @@ export function SurveySettingsClient({
     }
     
     try {
-      await fetch(`/api/survey/${activeTab}?id=${id}`, { method: "DELETE" })
+      await fetch(`/api/survey?id=${id}&type=${activeTab}`, { method: "DELETE" })
       toast.success(lang === "th" ? "ลบแล้ว" : "Deleted!")
     } catch {
       toast.error(lang === "th" ? "เกิดข้อผิดพลาด" : "Error")

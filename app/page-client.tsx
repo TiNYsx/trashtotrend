@@ -8,8 +8,6 @@ import { useLanguage } from "@/components/providers"
 import PhotobookCarousel from "@/components/photobook-carousel"
 import { 
   ArrowRight, 
-  QrCode, 
-  Trophy, 
   MapPin
 } from "lucide-react"
 
@@ -31,12 +29,6 @@ export default function HomeClient() {
     staffPortal: lang === 'th' ? 'พอร์ทัลเจ้าหน้าที่' : 'Staff Portal',
     startJourney: lang === 'th' ? 'เริ่มต้นการเดินทาง' : 'Start Your Journey',
     explore: lang === 'th' ? 'สำรวจ' : 'Explore',
-    scanCollect: lang === 'th' ? 'สแกนและสะสม' : 'Scan & Collect',
-    scanDesc: lang === 'th' ? 'เช็คอินที่บูธ' : 'Check in at booths',
-    earnRewards: lang === 'th' ? 'รับรางวัล' : 'Earn Rewards',
-    rewardsDesc: lang === 'th' ? 'ทำภารกิจทั้งหมด' : 'Complete all missions',
-    joinLoop: lang === 'th' ? 'เข้าร่วมวงจร' : 'Join the Loop',
-    loopDesc: lang === 'th' ? 'เศรษฐกิจหมุนเวียน' : 'Circular economy',
     bringCan: lang === 'th' ? 'อย่าลืม: นำกระป๋องอะลูมิเนียมของคุณมาเพื่อเข้าร่วม' : 'Remember: Bring your own aluminium can to participate',
     footer: lang === 'th' ? 'นิทรรศการเศรษฐกิจหมุนเวียน • โครงการวงจรอะลูมิเนียม' : 'Circular Economy Exhibition • Aluminium Loop Initiative',
     tagline: 'From Trash to Trend',
@@ -196,30 +188,6 @@ export default function HomeClient() {
           </div>
         </div>
 
-        {/* Feature Cards */}
-        <div className="px-4 pb-8 sm:px-6 sm:pb-12">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-lg mx-auto">
-            <FeatureCard
-              icon={<QrCode className="h-5 w-5" />}
-              title={t.scanCollect}
-              description={t.scanDesc}
-              delay={0.4}
-            />
-            <FeatureCard
-              icon={<Trophy className="h-5 w-5" />}
-              title={t.earnRewards}
-              description={t.rewardsDesc}
-              delay={0.5}
-            />
-            <FeatureCard
-              icon={<MapPin className="h-5 w-5" />}
-              title={t.joinLoop}
-              description={t.loopDesc}
-              delay={0.6}
-            />
-          </div>
-        </div>
-
         {/* Photobook Carousel Section */}
         <section className="px-4 py-12 sm:px-6 sm:py-16 lg:py-20 bg-background/50 backdrop-blur-sm">
           <div className="max-w-6xl mx-auto">
@@ -238,27 +206,4 @@ export default function HomeClient() {
   )
 }
 
-function FeatureCard({ 
-  icon, 
-  title, 
-  description,
-  delay 
-}: { 
-  icon: React.ReactNode
-  title: string
-  description: string
-  delay: number
-}) {
-  return (
-    <div 
-      className="group rounded-xl p-4 text-center transition-all animate-fade-in-up chrome-border bg-background/95 backdrop-blur-sm border border-border hover:bg-background/50 hover:backdrop-blur-md"
-      style={{ animationDelay: `${delay}s` }}
-    >
-      <div className="flex justify-center mb-2 text-primary group-hover:scale-110 transition-transform duration-300">
-        {icon}
-      </div>
-      <h3 className="font-bold text-base mb-1 text-primary break-words">{title}</h3>
-      <p className="text-sm text-foreground font-medium break-words drop-shadow-sm" style={{ textShadow: '0 1px 2px rgba(255,255,255,0.7)' }}>{description}</p>
-    </div>
-  )
-}
+

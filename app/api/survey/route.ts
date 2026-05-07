@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { pathname } = new URL(request.url)
-  const type = pathname.includes("/pre") ? "pre" : "post"
+  const { searchParams } = new URL(request.url)
+  const type = searchParams.get("type") || "post"
   const table = TABLE_MAP[type]
 
   try {
@@ -32,8 +32,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { pathname } = new URL(request.url)
-  const type = pathname.includes("/pre") ? "pre" : "post"
+  const { searchParams } = new URL(request.url)
+  const type = searchParams.get("type") || "post"
   const table = TABLE_MAP[type]
 
   try {
@@ -69,10 +69,9 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { pathname } = new URL(request.url)
-  const type = pathname.includes("/pre") ? "pre" : "post"
-  const table = TABLE_MAP[type]
   const { searchParams } = new URL(request.url)
+  const type = searchParams.get("type") || "post"
+  const table = TABLE_MAP[type]
   const id = searchParams.get("id")
 
   if (!id) {
