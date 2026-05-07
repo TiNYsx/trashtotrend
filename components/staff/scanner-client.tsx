@@ -144,9 +144,13 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
           return
         }
 
-        addLog("Starting camera...")
+        addLog("Starting camera (HD)...")
         videoStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" }
+          video: { 
+            facingMode: "environment",
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
         })
         
         if (cancelled) {
@@ -155,7 +159,6 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
         }
 
         video.srcObject = videoStream
-        // Critical for iOS
         video.setAttribute("playsinline", "true")
         video.setAttribute("muted", "true")
         video.setAttribute("autoplay", "true")
@@ -163,18 +166,27 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
         await video.play().catch(e => console.log("Video play error:", e))
         addLog("Video stream active")
 
+        // Prepare hints for ZXing
+        const hints = new Map()
+        const formats = [ZXing.BarcodeFormat.QR_CODE]
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats)
+        hints.set(ZXing.DecodeHintType.TRY_HARDER, true)
+
         let frameCount = 0
         const decodeLoop = async () => {
           if (cancelled || hasScannedRef.current) return
           
           try {
-            // Use a canvas for more control and to ensure frame capture
             const canvas = document.createElement("canvas")
             const context = canvas.getContext("2d")
             
             if (video.videoWidth > 0 && context) {
+              // Increase capture size for better detail
               canvas.width = video.videoWidth
               canvas.height = video.videoHeight
+              
+              // Apply simple image processing to help decoder
+              context.filter = "contrast(120%) grayscale(100%)"
               context.drawImage(video, 0, 0, canvas.width, canvas.height)
               
               frameCount++
@@ -182,7 +194,8 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
                 addLog(`Frames: ${frameCount}`)
               }
 
-              const result = await codeReader.decodeFromCanvas(canvas)
+              // Use decodeFromCanvas with hints
+              const result = await codeReader.decodeFromCanvas(canvas, hints)
               if (result && !hasScannedRef.current) {
                 const text = result.getText()
                 addLog("Scanned!")
@@ -196,11 +209,11 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
               }
             }
           } catch (e) {
-            // No QR found in this canvas frame
+            // No QR found
           }
           
           if (!cancelled && !hasScannedRef.current) {
-            decodeTimeout = setTimeout(decodeLoop, 200)
+            decodeTimeout = setTimeout(decodeLoop, 150) // Faster loop
           }
         }
 
