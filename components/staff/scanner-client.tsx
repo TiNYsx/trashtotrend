@@ -70,6 +70,21 @@ async function loadHtml5Qrcode() {
   return module.Html5Qrcode
 }
 
+async function resolvePreferredCamera() {
+  const Html5Scanner = await loadHtml5Qrcode()
+  try {
+    const cameras = await Html5Scanner.getCameras()
+    if (!cameras.length) return { facingMode: "environment" as const }
+
+    const backCamera =
+      cameras.find((camera) => /back|rear|environment/i.test(camera.label)) || cameras[cameras.length - 1]
+
+    return { deviceId: { exact: backCamera.id } }
+  } catch {
+    return { facingMode: "environment" as const }
+  }
+}
+
 export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
   const { t, lang } = useLanguage()
   const [selectedCheckpoint, setSelectedCheckpoint] = useState<Checkpoint | null>(null)
@@ -186,20 +201,22 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
           useBarCodeDetectorIfSupported: true,
         })
         html5ScannerRef.current = html5Scanner
+        const cameraConfig = await resolvePreferredCamera()
+        if (cancelled) return
 
         await html5Scanner.start(
-          { facingMode: "environment" },
+          cameraConfig,
           {
             fps: 12,
             qrbox: (viewfinderWidth, viewfinderHeight) => {
-              const edge = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.8)
+              const edge = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.75)
               return { width: edge, height: edge }
             },
-            disableFlip: false,
+            disableFlip: true,
             videoConstraints: {
               facingMode: { ideal: "environment" },
-              width: { ideal: 1920 },
-              height: { ideal: 1080 },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
             },
           },
           (decodedText) => {
@@ -396,7 +413,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               capture="environment"
               className="hidden"
               onChange={handleImageScan}
@@ -530,6 +547,24 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
           </motion.div>
         )}
       </div>
+      <style jsx global>{`
+        #${HTML5_QR_READER_ID},
+        #${HTML5_QR_READER_ID}__scan_region {
+          width: 100%;
+        }
+
+        #${HTML5_QR_READER_ID} video {
+          width: 100% !important;
+          height: auto !important;
+          object-fit: cover !important;
+          transform: none !important;
+          -webkit-transform: none !important;
+        }
+
+        #${HTML5_QR_READER_ID}__dashboard_section_csr {
+          display: none !important;
+        }
+      `}</style>
     </div>
   )
 }
