@@ -18,8 +18,9 @@ export async function GET() {
       created_at: string
       pre_survey_completed: boolean
       post_survey_completed: boolean
+      quiz_type: string | null
     }>(`
-      SELECT id, email, registration_data, created_at, pre_survey_completed, post_survey_completed
+      SELECT id, email, registration_data, created_at, pre_survey_completed, post_survey_completed, quiz_type
       FROM customers
       ORDER BY created_at DESC
     `)
@@ -142,6 +143,22 @@ export async function GET() {
     const customerSummaryData = customers.map(c => {
       const personality = personalityResults.get(c.id)
       const regData = c.registration_data || {}
+      
+      // Get personality from calculated results or fallback to customer record
+      const personalityType = personality?.label || (c.quiz_type ? personalityMap.get(c.quiz_type) || c.quiz_type : "")
+      const personalityCode = personality?.type || c.quiz_type || ""
+      
+      // Build comma-separated survey answers
+      const preAnswers = preSurveyMap.get(c.id)
+      const preSurveyAnswers = preAnswers 
+        ? preSurveyQuestions.map(q => preAnswers[q.display_order] ?? "").join(", ")
+        : ""
+      
+      const postAnswers = postSurveyMap.get(c.id)
+      const postSurveyAnswers = postAnswers
+        ? postSurveyQuestions.map(q => postAnswers[q.display_order] ?? "").join(", ")
+        : ""
+      
       return {
         "ID": c.id,
         "Email": c.email,
@@ -149,10 +166,12 @@ export async function GET() {
         "Age": regData.age || "",
         "Gender": regData.gender || "",
         "Contact": regData.contact || regData.phone || "",
-        "Personality Type": personality?.label || "",
-        "Personality Code": personality?.type || "",
-        "Pre-Survey Completed": c.pre_survey_completed ? "Yes" : "No",
-        "Post-Survey Completed": c.post_survey_completed ? "Yes" : "No",
+        "Personality Type": personalityType,
+        "Personality Code": personalityCode,
+        "Pre-Survey Status": c.pre_survey_completed ? "Yes" : "No",
+        "Pre-Survey Answers": preSurveyAnswers,
+        "Post-Survey Status": c.post_survey_completed ? "Yes" : "No",
+        "Post-Survey Answers": postSurveyAnswers,
         "Stamps Collected": (stampsMap.get(c.id)?.length || 0),
         "Stamp Booths": (stampsMap.get(c.id)?.join(", ") || ""),
         "Registered At": c.created_at ? new Date(c.created_at).toLocaleString() : "",
@@ -168,11 +187,13 @@ export async function GET() {
       const answers = customerQuizAnswers.get(customer.id)
       const personality = personalityResults.get(customer.id)
       if (answers && Object.keys(answers).length > 0) {
+        const personalityType = personality?.label || (customer.quiz_type ? personalityMap.get(customer.quiz_type) || customer.quiz_type : "")
+        const personalityCode = personality?.type || customer.quiz_type || ""
         const row: Record<string, string | number> = {
           "Customer ID": customer.id,
           "Email": customer.email,
-          "Personality Type": personality?.label || "",
-          "Personality Code": personality?.type || "",
+          "Personality Type": personalityType,
+          "Personality Code": personalityCode,
         }
         for (const [questionId, answer] of Object.entries(answers)) {
           row[`Q${questionId}`] = answer
@@ -231,11 +252,12 @@ export async function GET() {
     // Sheet 5: Personality Distribution
     const personalityDist: Record<string, string | number>[] = []
     for (const [typeCode, label] of personalityMap) {
-      const count = Array.from(personalityResults.values()).filter(r => r.type === typeCode).length
+      const countFromResponses = Array.from(personalityResults.values()).filter(r => r.type === typeCode).length
+      const countFromQuizType = customers.filter(c => c.quiz_type === typeCode && !personalityResults.has(c.id)).length
       personalityDist.push({
         "Type Code": typeCode,
         "Type Name": label,
-        "Count": count,
+        "Count": countFromResponses + countFromQuizType,
       })
     }
 

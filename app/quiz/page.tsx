@@ -71,7 +71,7 @@ export default function QuizPage() {
     newScores[option.type as keyof typeof scores]++
     setScores(newScores)
     
-    const newAnswers = [...answers, option.type === 'A' ? 1 : option.type === 'B' ? 2 : option.type === 'C' ? 3 : option.type === 'D' ? 4 : 5]
+    const newAnswers = [...answers, option.type]
     setAnswers(newAnswers)
 
     if (currentIndex < questions.length - 1) {
@@ -82,6 +82,19 @@ export default function QuizPage() {
       const dominantType = Object.entries(newScores).sort((a, b) => b[1] - a[1])[0][0]
       localStorage.setItem('quizScores', JSON.stringify(newScores))
       localStorage.setItem('quizDominantType', dominantType)
+      
+      // Save to database
+      try {
+        const { submitPersonalityQuiz } = await import('@/lib/actions/personality-quiz-submit')
+        const responses = questions.map((q, idx) => ({
+          question_id: q.id,
+          answer: newAnswers[idx]
+        }))
+        await submitPersonalityQuiz(responses, dominantType)
+      } catch (err) {
+        console.error('Failed to save quiz results:', err)
+      }
+      
       router.push(`/quiz/result?type=${dominantType}`)
     }
     
