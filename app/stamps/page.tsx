@@ -1,6 +1,7 @@
 import { requireCustomer } from "@/lib/auth"
 import { getMany, getOne } from "@/lib/db"
 import { StampPageClient } from "@/components/customer/stamp-page-client"
+import { redirect } from "next/navigation"
 
 type Booth = {
   id: number
@@ -19,6 +20,10 @@ type Stamp = {
 
 export default async function StampsPage() {
   const session = await requireCustomer()
+
+  if (!session) {
+    redirect("/login")
+  }
 
   let booths: Booth[] = []
   let stamps: Stamp[] = []

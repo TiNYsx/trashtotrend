@@ -58,7 +58,7 @@ export function QuizSettingsClient({
   const [formDescEn, setFormDescEn] = useState("")
   const [formDescTh, setFormDescTh] = useState("")
   const [questionType, setQuestionType] = useState("multiple_choice")
-  const [mcOptions, setMcOptions] = useState<{ text_en: string; text_th: string }[]>([])
+  const [mcOptions, setMcOptions] = useState<{ text_en: string; text_th: string; type: string }[]>([])
 
   const filteredQuestions = questions.filter(q => q.quiz_category === "journey" || !q.quiz_category)
   const nextDisplayOrder = questions.length > 0 ? Math.max(...questions.map(q => q.display_order)) + 1 : 1
@@ -77,7 +77,7 @@ export function QuizSettingsClient({
     setFormEn(q.question_en)
     setFormTh(q.question_th)
     setQuestionType(q.question_type || "multiple_choice")
-    setMcOptions(q.options || [])
+    setMcOptions((q.options || []).map(o => ({ ...o, type: (o as any).type || "A" })))
     setShowModal("question")
   }
 
@@ -378,7 +378,7 @@ export function QuizSettingsClient({
                     <div className="space-y-3 p-4 rounded-lg border border-border bg-secondary/30">
                       <div className="flex items-center justify-between">
                         <label className="text-sm font-medium">{t("options")}</label>
-                        <button type="button" onClick={() => setMcOptions([...mcOptions, { text_en: "", text_th: "" }])}
+                        <button type="button" onClick={() => setMcOptions([...mcOptions, { text_en: "", text_th: "", type: "A" }])}
                           className="flex items-center gap-1 text-sm text-primary hover:underline">
                           <Plus className="h-3 w-3" /> {t("addOption")}
                         </button>
@@ -396,6 +396,15 @@ export function QuizSettingsClient({
                             const copy = [...mcOptions]; copy[i] = { ...copy[i], text_th: e.target.value }; setMcOptions(copy)
                           }} placeholder={lang === "th" ? "ตัวเลือก (TH)" : "Option (TH)"}
                             className="flex-1 h-9 px-3 rounded-lg border border-input bg-background text-sm" />
+                          <select value={opt.type} onChange={(e) => {
+                            const copy = [...mcOptions]; copy[i] = { ...copy[i], type: e.target.value }; setMcOptions(copy)
+                          }} className="h-9 w-14 rounded-lg border border-input bg-background text-xs font-bold">
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                            <option value="E">E</option>
+                          </select>
                           <button type="button" onClick={() => setMcOptions(mcOptions.filter((_, j) => j !== i))}
                             className="p-1.5 text-muted-foreground hover:text-destructive">
                             <Trash2 className="h-3.5 w-3.5" />

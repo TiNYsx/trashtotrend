@@ -1,12 +1,15 @@
-"use client"
-
 import Link from 'next/link'
 import Image from 'next/image'
 import { LanguageToggle } from '@/components/language-toggle'
 import { useLanguage } from '@/components/providers'
 import { ArrowLeft, Recycle, Leaf, Users, Globe, ArrowRight } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 
-export default function AboutClient() {
+interface AboutClientProps {
+  initialSettings: Record<string, string>
+}
+
+export default function AboutClient({ initialSettings }: AboutClientProps) {
   const { lang } = useLanguage()
 
   const t = {
@@ -15,12 +18,12 @@ export default function AboutClient() {
     fromTrashToTrend: lang === 'th' ? 'จากขยะสู่แนวโน้ม' : 'From Trash to Trend',
     ourMission: lang === 'th' ? 'พันธกิจของเรา' : 'Our Mission',
     missionDesc: lang === 'th' 
-      ? 'HOOP คือนิทรรศการสร้างสรรค์ที่สำรวจการเปลี่ยนแปลงของอะลูมิเนียมจากของเสียสู่คุณค่า เราเชื่อว่าสิ่งที่สังคมทิ้งสามารถกลายเป็นสิ่งมีคุณค่าผ่านนวัตกรรม ความคิดสร้างสรรค์ และการบริโภคอย่างมีสติ'
-      : 'HOOP is a creative exhibition exploring the transformation of aluminium from waste to worth. We believe that what society discards can become something valuable through innovation, creativity, and conscious consumption.',
+      ? (initialSettings.about_mission_th || 'HOOP คือนิทรรศการสร้างสรรค์ที่สำรวจการเปลี่ยนแปลงของอะลูมิเนียมจากของเสียสู่คุณค่า เราเชื่อว่าสิ่งที่สังคมทิ้งสามารถกลายเป็นสิ่งมีคุณค่าผ่านนวัตกรรม ความคิดสร้างสรรค์ และการบริโภคอย่างมีสติ')
+      : (initialSettings.about_mission_en || 'HOOP is a creative exhibition exploring the transformation of aluminium from waste to worth. We believe that what society discards can become something valuable through innovation, creativity, and conscious consumption.'),
     circularEconomy: lang === 'th' ? 'เศรษฐกิจหมุนเวียน' : 'Circular Economy',
     circularDesc: lang === 'th'
-      ? 'วงจรอะลูมิเนียมเป็นหนึ่งในระบบรีไซเคิลที่มีประสิทธิภาพมากที่สุดในโลก คุณทราบหรือไม่ว่าอะลูมิเนียมสามารถรีไซเคิลได้ไม่สิ้นสุดโดยไม่สูญเสียคุณภาพ? ทุกกระป๋องที่คุณนำมาจะกลายเป็นส่วนหนึ่งของวงจรการฟื้นฟูที่ไม่มีที่สิ้นสุด'
-      : 'The aluminium loop represents one of the most efficient recycling systems on Earth. Did you know that aluminium can be recycled infinitely without losing quality? Every can you bring becomes part of this endless cycle of renewal.',
+      ? (initialSettings.about_circular_th || 'วงจรอะลูมิเนียมเป็นหนึ่งในระบบรีไซเคิลที่มีประสิทธิภาพมากที่สุดในโลก คุณทราบหรือไม่ว่าอะลูมิเนียมสามารถรีไซเคิลได้ไม่สิ้นสุดโดยไม่สูญเสียคุณภาพ? ทุกกระป๋องที่คุณนำมาจะกลายเป็นส่วนหนึ่งของวงจรการฟื้นฟูที่ไม่มีที่สิ้นสุด')
+      : (initialSettings.about_circular_en || 'The aluminium loop represents one of the most efficient recycling systems on Earth. Did you know that aluminium can be recycled infinitely without losing quality? Every can you bring becomes part of this endless cycle of renewal.'),
     envImpact: lang === 'th' ? 'ผลกระทบต่อสิ่งแวดล้อม' : 'Environmental Impact',
     byParticipating: lang === 'th' ? 'เมื่อเข้าร่วม คุณช่วย:' : 'By participating, you help:',
     reduceWaste: lang === 'th' ? 'ลดของเสียในหลุมฝังกลบ' : 'Reduce landfill waste',
@@ -29,8 +32,8 @@ export default function AboutClient() {
     createAwareness: lang === 'th' ? 'สร้างความตระหนักเกี่ยวกับแนวปฏิบัติที่ยั่งยืน' : 'Create awareness for sustainable practices',
     partners: lang === 'th' ? 'พันธมิตรและผู้สนับสนุน' : 'Partners & Sponsors',
     partnersDesc: lang === 'th'
-      ? 'งานนิทรรศการนี้เป็นไปได้ด้วยความร่วมมือกับองค์กรด้านสิ่งแวดล้อม ธุรกิจท้องถิ่น และชุมชนสร้างสรรค์ที่มุ่งมั่นต่อความยั่งยืน'
-      : 'This exhibition is made possible through partnerships with environmental organizations, local businesses, and creative communities committed to sustainability.',
+      ? (initialSettings.about_partners_th || 'งานนิทรรศการนี้เป็นไปได้ด้วยความร่วมมือกับองค์กรด้านสิ่งแวดล้อม ธุรกิจท้องถิ่น และชุมชนสร้างสรรค์ที่มุ่งมั่นต่อความยั่งยืน')
+      : (initialSettings.about_partners_en || 'This exhibition is made possible through partnerships with environmental organizations, local businesses, and creative communities committed to sustainability.'),
     startJourney: lang === 'th' ? 'เริ่มต้นการเดินทาง' : 'Start Your Journey',
   }
 
@@ -101,7 +104,9 @@ export default function AboutClient() {
               </div>
               <h2 className="font-display text-xl font-bold chrome-text-subtle">{t.ourMission}</h2>
             </div>
-            <p className="text-muted-foreground leading-relaxed">{t.missionDesc}</p>
+            <div className="text-muted-foreground leading-relaxed prose prose-sm max-w-none">
+              <ReactMarkdown>{t.missionDesc}</ReactMarkdown>
+            </div>
           </div>
 
           {/* Circular Economy Card */}
@@ -114,7 +119,9 @@ export default function AboutClient() {
               </div>
               <h2 className="font-display text-xl font-bold chrome-text-subtle">{t.circularEconomy}</h2>
             </div>
-            <p className="text-muted-foreground leading-relaxed">{t.circularDesc}</p>
+            <div className="text-muted-foreground leading-relaxed prose prose-sm max-w-none">
+              <ReactMarkdown>{t.circularDesc}</ReactMarkdown>
+            </div>
           </div>
 
           {/* Environmental Impact Card */}
@@ -160,7 +167,9 @@ export default function AboutClient() {
               </div>
               <h2 className="font-display text-xl font-bold chrome-text-subtle">{t.partners}</h2>
             </div>
-            <p className="text-muted-foreground text-sm">{t.partnersDesc}</p>
+            <div className="text-muted-foreground text-sm prose prose-sm max-w-none">
+              <ReactMarkdown>{t.partnersDesc}</ReactMarkdown>
+            </div>
           </div>
 
           {/* CTA */}

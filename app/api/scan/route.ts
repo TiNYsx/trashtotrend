@@ -51,10 +51,6 @@ export async function POST(req: Request) {
       // ignore event creation errors
     }
 
-    // regenerate QR token to prevent reuse
-    const newToken = generateQRToken()
-    await query("UPDATE customers SET qr_token = $1 WHERE id = $2", [newToken, customer.id])
-
     return NextResponse.json({
       success: true,
       customer_id: customer.id,

@@ -2,6 +2,7 @@ import { requireCustomer } from "@/lib/auth"
 import { getMany, getOne, query } from "@/lib/db"
 import { QuizFlowClient } from "@/components/customer/quiz-flow-client"
 import Link from "next/link"
+import { redirect } from "next/navigation"
 
 type Question = {
   id: number
@@ -25,7 +26,10 @@ export default async function QuizPage({
 }: {
   params: Promise<{ boothId: string }>
 }) {
-  await requireCustomer()
+  const session = await requireCustomer()
+  if (!session) {
+    redirect("/login")
+  }
   const { boothId } = await params
   const bid = parseInt(boothId)
 
@@ -60,7 +64,6 @@ export default async function QuizPage({
 
   if (questions.length === 0) {
     // auto-insert stamp if booth has no quiz
-    const session = await requireCustomer()
     try {
       await query(
         "INSERT INTO stamps (customer_id, booth_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
