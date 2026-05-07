@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useLanguage } from "@/components/providers"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -30,13 +30,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
   const [showManualInput, setShowManualInput] = useState<boolean>(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const scannerRef = useRef<any>(null)
-  const isScannerRunningRef = useRef(false)
   const hasScannedRef = useRef(false)
-  const selectedCheckpointRef = useRef<Checkpoint | null>(null)
-  const resultRef = useRef<any>(null)
-
-  // Keep ref in sync
-  selectedCheckpointRef.current = selectedCheckpoint
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -55,148 +49,29 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
     }
   }, [lang])
 
-  // Scanner effect - only starts/stops based on scanning state
-  useEffect(() => {
-    if (!scanning) {
-      // Cleanup scanner when stopping
-      if (scannerRef.current) {
-        console.log("[Scanner] Cleaning up scanner")
-        const s = scannerRef.current
-        scannerRef.current = null
-        isScannerRunningRef.current = false
-        s.stop().catch((e: any) => console.log("[Scanner] Stop error:", e))
-        s.destroy()
-      }
-      return
-    }
-
-    if (!videoRef.current) return
-
-    let scanner: any = null
-    let cancelled = false
-
-    const startScanner = async () => {
-      console.log("[Scanner] Starting scanner...")
-      setCameraStatus(lang === "th" ? "กำลังเปิดกล้อง..." : "Starting camera...")
-      hasScannedRef.current = false
-      
-      try {
-        const QrScanner = (await import('qr-scanner')).default
-        
-        if (cancelled) {
-          console.log("[Scanner] Cancelled before init")
-          return
-        }
-
-        const video = videoRef.current!
-        video.playsInline = true
-        video.muted = true
-        video.setAttribute('playsinline', 'true')
-        video.setAttribute('muted', 'true')
-        
-        scanner = new QrScanner(
-          video,
-          (scanResult: any) => {
-            // Prevent duplicate scans
-            if (hasScannedRef.current) {
-              console.log("[Scanner] Duplicate scan ignored")
-              return
-            }
-            hasScannedRef.current = true
-            
-            const decodedText = scanResult.data
-            console.log("[Scanner] QR detected:", decodedText)
-            
-            // Process scan asynchronously
-            processScan(decodedText)
-          },
-          {
-            preferredCamera: 'environment',
-            maxScansPerSecond: 10,
-            highlightScanRegion: true,
-            highlightCodeOutline: true,
-          }
-        )
-        
-        if (cancelled) {
-          console.log("[Scanner] Cancelled after init")
-          scanner.destroy()
-          return
-        }
-        
-        scannerRef.current = scanner
-        await scanner.start()
-        
-        if (cancelled) {
-          console.log("[Scanner] Cancelled after start")
-          scanner.stop().catch(() => {})
-          scanner.destroy()
-          return
-        }
-        
-        isScannerRunningRef.current = true
-        console.log("[Scanner] Scanner started successfully")
-        setCameraStatus(lang === "th" ? "กล้องพร้อมใช้งาน - จัด QR ให้อยู่ในกรอบ" : "Camera ready - position QR in frame")
-      } catch (err: any) {
-        console.error("[Scanner] Start error:", err)
-        if (!cancelled) {
-          isScannerRunningRef.current = false
-          setScanning(false)
-          setCameraStatus("")
-          const errorMessage = err?.message || err?.toString?.() || ""
-          if (errorMessage.includes("Permission") || errorMessage.includes("permission") || errorMessage.includes("denied")) {
-            setResult({ type: "error", message: t("cameraDenied") })
-          } else {
-            setResult({
-              type: "error",
-              message: lang === "th"
-                ? `ไม่สามารถเปิดกล้องได้: ${errorMessage}`
-                : `Could not start camera: ${errorMessage}`,
-            })
-          }
-        }
-      }
-    }
-
-    startScanner()
-
-    return () => {
-      cancelled = true
-      console.log("[Scanner] Effect cleanup")
-      if (scanner) {
-        scanner.stop().catch(() => {})
-        scanner.destroy()
-      }
-    }
-  }, [scanning])
-
-  // Process scan result - separated from scanner callback to avoid race conditions
-  const processScan = async (decodedText: string) => {
+  const processScan = useCallback(async (decodedText: string) => {
     console.log("[Scan] Processing:", decodedText)
     
-    const checkpoint = selectedCheckpointRef.current
-    if (!checkpoint) {
+    if (!selectedCheckpoint) {
       console.log("[Scan] No checkpoint selected")
       return
     }
 
-    // Extract token from URL if full URL is scanned
     let qrToken = decodedText
-    if (decodedText.includes('/scan/')) {
+    if (decodedText && decodedText.includes('/scan/')) {
       qrToken = decodedText.split('/scan/')[1]
     }
 
-    console.log("[Scan] Token:", qrToken, "Booth:", checkpoint.slug)
+    console.log("[Scan] Token:", qrToken, "Booth:", selectedCheckpoint.slug)
 
     try {
-      // First stop the scanner UI
       setScanning(false)
       setCameraStatus("")
       
       const res = await fetch("/api/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ qr_token: qrToken, booth_id: parseInt(checkpoint.slug) }),
+        body: JSON.stringify({ qr_token: qrToken, booth_id: parseInt(selectedCheckpoint.slug) }),
       })
 
       const data = await res.json()
@@ -220,11 +95,137 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
       console.error("[Scan] API error:", err)
       setResult({ type: "error", message: t("networkError") })
     }
-  }
+  }, [selectedCheckpoint, lang, t])
 
-  const handleScan = async (decodedText: string) => {
-    // For manual input, process directly
-    await processScan(decodedText)
+  useEffect(() => {
+    if (!scanning || !videoRef.current) return
+
+    let scanner: any = null
+    let cancelled = false
+
+    const startScanner = async () => {
+      console.log("[Scanner] Starting...")
+      setCameraStatus(lang === "th" ? "กำลังเปิดกล้อง..." : "Starting camera...")
+      hasScannedRef.current = false
+      
+      try {
+        const qrScannerModule = await import('qr-scanner')
+        const QrScanner = qrScannerModule.default
+        
+        // Set worker path explicitly for bundled apps
+        if (typeof window !== 'undefined') {
+          QrScanner.WORKER_PATH = '/qr-scanner-worker.min.js'
+        }
+        
+        if (cancelled) return
+
+        const video = videoRef.current!
+        
+        scanner = new QrScanner(
+          video,
+          (scanResult: any) => {
+            try {
+              // Prevent duplicate scans
+              if (hasScannedRef.current) {
+                console.log("[Scanner] Duplicate ignored")
+                return
+              }
+              hasScannedRef.current = true
+              
+              // Handle both string and object result formats
+              let decodedText: string
+              if (typeof scanResult === 'string') {
+                decodedText = scanResult
+              } else if (scanResult && typeof scanResult === 'object') {
+                decodedText = scanResult.data || scanResult.text || String(scanResult)
+              } else {
+                decodedText = String(scanResult)
+              }
+              
+              console.log("[Scanner] Detected:", decodedText)
+              
+              if (!decodedText || decodedText === 'undefined' || decodedText === 'null') {
+                console.log("[Scanner] Empty result, ignoring")
+                hasScannedRef.current = false
+                return
+              }
+              
+              // Stop scanner in next tick to avoid race condition
+              setTimeout(() => {
+                if (scanner) {
+                  scanner.stop().catch((e: any) => console.log("[Scanner] Stop error:", e))
+                }
+                processScan(decodedText)
+              }, 100)
+            } catch (callbackErr) {
+              console.error("[Scanner] Callback error:", callbackErr)
+              hasScannedRef.current = false
+            }
+          },
+          {
+            preferredCamera: 'environment',
+            maxScansPerSecond: 5,
+            highlightScanRegion: true,
+            highlightCodeOutline: true,
+            returnDetailedScanResult: true,
+          }
+        )
+        
+        if (cancelled) {
+          scanner.destroy()
+          return
+        }
+        
+        scannerRef.current = scanner
+        await scanner.start()
+        
+        if (cancelled) {
+          scanner.stop().catch(() => {})
+          scanner.destroy()
+          return
+        }
+        
+        console.log("[Scanner] Started successfully")
+        setCameraStatus(lang === "th" ? "กล้องพร้อมใช้งาน - จัด QR ให้อยู่ในกรอบ" : "Camera ready - position QR in frame")
+      } catch (err: any) {
+        console.error("[Scanner] Start error:", err)
+        if (!cancelled) {
+          setScanning(false)
+          setCameraStatus("")
+          const errorMessage = err?.message || err?.toString?.() || ""
+          if (errorMessage.includes("Permission") || errorMessage.includes("permission") || errorMessage.includes("denied")) {
+            setResult({ type: "error", message: t("cameraDenied") })
+          } else {
+            setResult({
+              type: "error",
+              message: lang === "th"
+                ? `ไม่สามารถเปิดกล้องได้: ${errorMessage}`
+                : `Could not start camera: ${errorMessage}`,
+            })
+          }
+        }
+      }
+    }
+
+    startScanner()
+
+    return () => {
+      cancelled = true
+      console.log("[Scanner] Cleanup")
+      if (scanner) {
+        scanner.stop().catch(() => {})
+        scanner.destroy()
+      }
+      scannerRef.current = null
+    }
+  }, [scanning, lang, t, processScan])
+
+  const handleManualScan = async () => {
+    if (manualCode.trim()) {
+      await processScan(manualCode.trim())
+      setManualCode("")
+      setShowManualInput(false)
+    }
   }
 
   const startNewScan = async () => {
@@ -271,14 +272,12 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
           </div>
         </div>
 
-        {/* Insecure context warning */}
         {insecureWarning && (
           <div className="mb-4 w-full rounded-lg bg-destructive/20 px-4 py-3 text-center text-sm text-destructive">
             {insecureWarning}
           </div>
         )}
 
-        {/* Step 1: Select booth */}
         {!selectedCheckpoint && (
           <motion.div
             className="w-full"
@@ -312,20 +311,16 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
           </motion.div>
         )}
 
-        {/* Step 2: Scanner or results */}
         {selectedCheckpoint && (
           <motion.div
             className="flex w-full flex-col items-center gap-4"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            {/* Booth indicator */}
             <div className="flex items-center gap-2 rounded-full glass px-4 py-2">
               <MapPin className="h-4 w-4 text-primary" />
               <span className="text-sm font-medium text-foreground">
-                {lang === "th"
-                  ? selectedCheckpoint.name_th
-                  : selectedCheckpoint.name_en}
+                {lang === "th" ? selectedCheckpoint.name_th : selectedCheckpoint.name_en}
               </span>
               <button
                 onClick={() => {
@@ -340,24 +335,28 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
               </button>
             </div>
 
-            {/* Camera view - ALWAYS MOUNTED, just hidden when not scanning */}
+            {/* Camera view */}
             <div 
-              className="w-full rounded-xl border border-border bg-foreground/5 overflow-hidden"
-              style={{ display: scanning ? 'block' : 'none', minHeight: scanning ? 'auto' : '0' }}
+              className={`w-full rounded-xl border border-border bg-foreground/5 overflow-hidden transition-all duration-300 ${
+                scanning ? 'opacity-100 max-h-[500px]' : 'opacity-0 max-h-0'
+              }`}
             >
               <video
                 ref={videoRef}
                 className="w-full"
-                style={{ height: "350px", objectFit: "cover" }}
+                style={{ height: scanning ? "350px" : "0px", objectFit: "cover" }}
                 playsInline
                 muted
+                autoPlay
               />
-              <p className="py-3 text-center text-xs text-muted-foreground">
-                {cameraStatus || t("positionQR")}
-              </p>
+              {scanning && (
+                <p className="py-3 text-center text-xs text-muted-foreground">
+                  {cameraStatus || t("positionQR")}
+                </p>
+              )}
             </div>
 
-            {/* Manual input fallback */}
+            {/* Manual input */}
             {!scanning && showManualInput && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -372,21 +371,13 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
                   className="w-full rounded-lg border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && manualCode.trim()) {
-                      handleScan(manualCode.trim())
-                      setManualCode("")
-                      setShowManualInput(false)
+                      handleManualScan()
                     }
                   }}
                 />
                 <div className="flex gap-2">
                   <button
-                    onClick={() => {
-                      if (manualCode.trim()) {
-                        handleScan(manualCode.trim())
-                        setManualCode("")
-                        setShowManualInput(false)
-                      }
-                    }}
+                    onClick={handleManualScan}
                     className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
                   >
                     {lang === "th" ? "ยืนยัน" : "Submit"}
@@ -404,7 +395,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
               </motion.div>
             )}
 
-            {/* Result display */}
+            {/* Result */}
             <AnimatePresence mode="wait">
               {result && (
                 <motion.div
@@ -444,7 +435,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
               )}
             </AnimatePresence>
 
-            {/* Scan button */}
+            {/* Buttons */}
             {!scanning && !showManualInput && (
               <div className="flex flex-col items-center gap-3">
                 <button
@@ -452,9 +443,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
                   className="flex h-14 items-center gap-3 rounded-full bg-primary px-8 text-sm font-semibold text-primary-foreground shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl glow-primary"
                 >
                   <Camera className="h-5 w-5" />
-                  {result
-                    ? t("scanAgain")
-                    : t("startScanning")}
+                  {result ? t("scanAgain") : t("startScanning")}
                 </button>
                 <button
                   onClick={() => setShowManualInput(true)}
@@ -467,9 +456,7 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
 
             {scanning && (
               <button
-                onClick={() => {
-                  setScanning(false)
-                }}
+                onClick={() => setScanning(false)}
                 className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
               >
                 Cancel
