@@ -11,7 +11,11 @@ import {
   MapPin
 } from "lucide-react"
 
-export default function HomeClient() {
+interface HomeClientProps {
+  initialSettings: Record<string, string>
+}
+
+export default function HomeClient({ initialSettings }: HomeClientProps) {
   const { lang } = useLanguage()
   const videoRef = useRef<HTMLVideoElement>(null)
 
@@ -31,11 +35,15 @@ export default function HomeClient() {
     explore: lang === 'th' ? 'สำรวจ' : 'Explore',
     bringCan: lang === 'th' ? 'อย่าลืม: นำกระป๋องอะลูมิเนียมของคุณมาเพื่อเข้าร่วม' : 'Remember: Bring your own aluminium can to participate',
     footer: lang === 'th' ? 'นิทรรศการเศรษฐกิจหมุนเวียน • โครงการวงจรอะลูมิเนียม' : 'Circular Economy Exhibition • Aluminium Loop Initiative',
-    tagline: 'From Trash to Trend',
-    taglineTh: 'จากขยะสู่แนวโน้ม',
+    tagline: lang === 'th' 
+      ? (initialSettings.home_tagline_th || 'จากขยะสู่แนวโน้ม')
+      : (initialSettings.home_tagline_en || 'From Trash to Trend'),
     description: lang === 'th' 
-      ? 'สัมผัสการเปลี่ยนแปลงของอะลูมิเนียมจากของเสียสู่คุณค่า เข้าร่วมการเดินทางสู่เศรษฐกิจหมุนเวียนและค้นพบว่าขยะกลายเป็นสมบัติได้อย่างไร'
-      : 'Experience the transformation of aluminium from waste to worth. Join our circular economy journey and discover how trash becomes treasure.',
+      ? (initialSettings.home_description_th || 'สัมผัสการเปลี่ยนแปลงของอะลูมิเนียมจากของเสียสู่คุณค่า เข้าร่วมการเดินทางสู่เศรษฐกิจหมุนเวียนและค้นพบว่าขยะกลายเป็นสมบัติได้อย่างไร')
+      : (initialSettings.home_description_en || 'Experience the transformation of aluminium from waste to worth. Join our circular economy journey and discover how trash becomes treasure.'),
+    title: lang === 'th'
+      ? (initialSettings.home_title_th || 'นิทรรศการ HOOP')
+      : (initialSettings.home_title_en || 'HOOP Creative Exhibition'),
   }
 
   return (
@@ -141,7 +149,7 @@ export default function HomeClient() {
               <div className="relative w-48 h-48 sm:w-64 sm:h-64 md:w-72 md:h-72 mx-auto">
                 <Image
                   src="/images/Hoop main.png"
-                  alt="HOOP"
+                  alt={t.title}
                   fill
                   className="object-contain drop-shadow-2xl"
                   priority
@@ -155,9 +163,12 @@ export default function HomeClient() {
             </div>
 
             {/* Description */}
-            <p className="text-foreground text-lg leading-relaxed font-medium animate-fade-in-up drop-shadow-sm" style={{ animationDelay: '0.2s', textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}>
-              {t.description}
-            </p>
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold chrome-text">{t.tagline}</h2>
+              <p className="text-foreground text-lg leading-relaxed font-medium animate-fade-in-up drop-shadow-sm" style={{ animationDelay: '0.2s', textShadow: '0 1px 3px rgba(255,255,255,0.8)' }}>
+                {t.description}
+              </p>
+            </div>
 
             {/* CTA Buttons */}
             <div className="flex flex-col gap-4 pt-2 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
@@ -205,5 +216,3 @@ export default function HomeClient() {
     </main>
   )
 }
-
-

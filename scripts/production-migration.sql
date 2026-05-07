@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS pre_survey_questions (
   question_type VARCHAR(50) DEFAULT 'rating',
   options JSONB,
   is_required BOOLEAN DEFAULT true,
-  display_order INT UNIQUE DEFAULT 0,
+  display_order INT DEFAULT 0, -- Removed UNIQUE to allow reordering
   is_active BOOLEAN DEFAULT true
 );
 
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS post_survey_questions (
   question_type VARCHAR(50) DEFAULT 'rating',
   options JSONB,
   is_required BOOLEAN DEFAULT true,
-  display_order INT UNIQUE DEFAULT 0,
+  display_order INT DEFAULT 0, -- Removed UNIQUE to allow reordering
   is_active BOOLEAN DEFAULT true
 );
 

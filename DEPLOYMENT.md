@@ -94,6 +94,10 @@ CMD ["npm", "start"]
 - [ ] Set up uptime monitoring
 - [ ] Create backup strategy for database
 - [ ] Document how to scale if needed
+- [ ] **Run Database Patches**: If you experience errors saving surveys/quizzes, run:
+  ```bash
+  psql -U postgres -d your_database -f scripts/production-patch-001.sql
+  ```
 
 ## Post-Deployment
 

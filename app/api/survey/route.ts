@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { query, getMany } from "@/lib/db"
+import { query, getMany, withTransaction } from "@/lib/db"
 import { requireStaff } from "@/lib/auth"
 
 const TABLE_MAP = {
@@ -15,7 +15,11 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url)
   const type = searchParams.get("type") || "post"
-  const table = TABLE_MAP[type]
+  const table = TABLE_MAP[type as keyof typeof TABLE_MAP]
+
+  if (!table) {
+    return NextResponse.json({ error: "Invalid survey type" }, { status: 400 })
+  }
 
   try {
     const questions = await getMany(`SELECT * FROM ${table} ORDER BY display_order ASC`)
@@ -34,27 +38,40 @@ export async function POST(request: NextRequest) {
 
   const { searchParams } = new URL(request.url)
   const type = searchParams.get("type") || "post"
-  const table = TABLE_MAP[type]
+  const table = TABLE_MAP[type as keyof typeof TABLE_MAP]
+
+  if (!table) {
+    return NextResponse.json({ error: "Invalid survey type" }, { status: 400 })
+  }
 
   try {
     const { questions } = await request.json()
 
-    for (const q of questions) {
-      if (q.id && q.id > 0) {
-        await query(
-          `UPDATE ${table} 
-           SET question_en = $1, question_th = $2, question_type = $3, is_required = $4, display_order = $5, is_active = $6
-           WHERE id = $7`,
-          [q.question_en, q.question_th, q.question_type, q.is_required, q.display_order, q.is_active, q.id]
-        )
-      } else {
-        await query(
-          `INSERT INTO ${table} (question_en, question_th, question_type, is_required, display_order, is_active)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          [q.question_en, q.question_th, q.question_type, q.is_required, q.display_order, q.is_active]
-        )
-      }
+    if (!Array.isArray(questions)) {
+      return NextResponse.json({ error: "Invalid format" }, { status: 400 })
     }
+
+    await withTransaction(async (client) => {
+      for (const q of questions) {
+        // Validate required fields
+        if (!q.question_en || !q.question_th) continue
+
+        if (q.id && q.id > 0) {
+          await client.query(
+            `UPDATE ${table} 
+             SET question_en = $1, question_th = $2, question_type = $3, is_required = $4, display_order = $5, is_active = $6
+             WHERE id = $7`,
+            [q.question_en, q.question_th, q.question_type || 'rating', q.is_required ?? true, q.display_order || 0, q.is_active ?? true, q.id]
+          )
+        } else {
+          await client.query(
+            `INSERT INTO ${table} (question_en, question_th, question_type, is_required, display_order, is_active)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [q.question_en, q.question_th, q.question_type || 'rating', q.is_required ?? true, q.display_order || 0, q.is_active ?? true]
+          )
+        }
+      }
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {

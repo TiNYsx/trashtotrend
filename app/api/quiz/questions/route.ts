@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { query, getMany } from "@/lib/db"
+import { query, getMany, withTransaction } from "@/lib/db"
 import { requireStaff } from "@/lib/auth"
 
 export async function GET() {
@@ -28,22 +28,30 @@ export async function POST(request: NextRequest) {
   try {
     const { questions, category } = await request.json()
 
-    for (const q of questions) {
-      if (q.id) {
-        await query(
-          `UPDATE quiz_questions 
-           SET question_en = $1, question_th = $2, question_type = $3, options = $4, display_order = $5, is_active = $6, booth_id = $7, quiz_category = $8
-           WHERE id = $9`,
-          [q.question_en, q.question_th, q.question_type, JSON.stringify(q.options), q.display_order, q.is_active, q.booth_id, q.quiz_category || category, q.id]
-        )
-      } else {
-        await query(
-          `INSERT INTO quiz_questions (question_en, question_th, question_type, options, display_order, is_active, booth_id, quiz_category)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-          [q.question_en, q.question_th, q.question_type, JSON.stringify(q.options), q.display_order, q.is_active, q.booth_id, q.quiz_category || category]
-        )
-      }
+    if (!Array.isArray(questions)) {
+      return NextResponse.json({ error: "Invalid format" }, { status: 400 })
     }
+
+    await withTransaction(async (client) => {
+      for (const q of questions) {
+        if (!q.question_en || !q.question_th) continue
+
+        if (q.id) {
+          await client.query(
+            `UPDATE quiz_questions 
+             SET question_en = $1, question_th = $2, question_type = $3, options = $4, display_order = $5, is_active = $6, booth_id = $7, quiz_category = $8
+             WHERE id = $9`,
+            [q.question_en, q.question_th, q.question_type || 'multiple_choice', JSON.stringify(q.options || []), q.display_order || 0, q.is_active ?? true, q.booth_id || null, q.quiz_category || category || 'personality', q.id]
+          )
+        } else {
+          await client.query(
+            `INSERT INTO quiz_questions (question_en, question_th, question_type, options, display_order, is_active, booth_id, quiz_category)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [q.question_en, q.question_th, q.question_type || 'multiple_choice', JSON.stringify(q.options || []), q.display_order || 0, q.is_active ?? true, q.booth_id || null, q.quiz_category || category || 'personality']
+          )
+        }
+      }
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {
