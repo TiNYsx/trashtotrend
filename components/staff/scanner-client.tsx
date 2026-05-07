@@ -160,32 +160,47 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
         video.setAttribute("muted", "true")
         video.setAttribute("autoplay", "true")
         
-        await video.play()
+        await video.play().catch(e => console.log("Video play error:", e))
         addLog("Video stream active")
 
+        let frameCount = 0
         const decodeLoop = async () => {
           if (cancelled || hasScannedRef.current) return
           
           try {
-            // Use decodeFromVideoElement which is very robust
-            const result = await codeReader.decodeFromVideoElement(video)
-            if (result && !hasScannedRef.current) {
-              const text = result.getText()
-              addLog("Scanned!")
-              hasScannedRef.current = true
+            // Use a canvas for more control and to ensure frame capture
+            const canvas = document.createElement("canvas")
+            const context = canvas.getContext("2d")
+            
+            if (video.videoWidth > 0 && context) {
+              canvas.width = video.videoWidth
+              canvas.height = video.videoHeight
+              context.drawImage(video, 0, 0, canvas.width, canvas.height)
               
-              if (videoStream) {
-                videoStream.getTracks().forEach(t => t.stop())
+              frameCount++
+              if (frameCount % 10 === 0) {
+                addLog(`Frames: ${frameCount}`)
               }
-              processScan(text)
-              return
+
+              const result = await codeReader.decodeFromCanvas(canvas)
+              if (result && !hasScannedRef.current) {
+                const text = result.getText()
+                addLog("Scanned!")
+                hasScannedRef.current = true
+                
+                if (videoStream) {
+                  videoStream.getTracks().forEach(t => t.stop())
+                }
+                processScan(text)
+                return
+              }
             }
           } catch (e) {
-            // No QR found in frame
+            // No QR found in this canvas frame
           }
           
           if (!cancelled && !hasScannedRef.current) {
-            decodeTimeout = setTimeout(decodeLoop, 300)
+            decodeTimeout = setTimeout(decodeLoop, 200)
           }
         }
 
