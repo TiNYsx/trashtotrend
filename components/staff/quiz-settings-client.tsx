@@ -59,6 +59,7 @@ export function QuizSettingsClient({
   const [formDescTh, setFormDescTh] = useState("")
 
   const filteredQuestions = questions.filter(q => q.quiz_category === "journey" || !q.quiz_category)
+  const nextDisplayOrder = questions.length > 0 ? Math.max(...questions.map(q => q.display_order)) + 1 : 1
 
   const openAddQuestion = () => {
     setEditItem(null)
@@ -108,7 +109,7 @@ export function QuizSettingsClient({
         question_th: formTh,
         question_type: "multiple_choice",
         options: [],
-        display_order: filteredQuestions.length + 1,
+        display_order: editItem ? editItem.display_order : nextDisplayOrder,
         is_active: true,
         booth_id: null,
         quiz_category: "journey"
