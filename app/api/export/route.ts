@@ -24,59 +24,7 @@ export async function GET() {
       ORDER BY created_at DESC
     `)
 
-    // 2. Get personality types for reference
-    const personalityTypes = await getMany<{
-      type_code: string
-      name_en: string
-      name_th: string
-    }>("SELECT type_code, name_en, name_th FROM personality_types ORDER BY type_code")
-
-    const personalityMap = new Map(personalityTypes.map(p => [p.type_code, `${p.name_en} (${p.name_th})`]))
-
-    // 3. Get quiz responses for all customers (only personality/journey quiz)
-    const quizResponses = await getMany<{
-      customer_id: number
-      question_id: number
-      answer: string
-    }>(`
-      SELECT qr.customer_id, qr.question_id, qr.answer
-      FROM quiz_responses qr
-      JOIN quiz_questions qq ON qr.question_id = qq.id
-      WHERE qr.customer_id IS NOT NULL 
-        AND (qr.booth_id IS NULL OR qq.quiz_category = 'journey')
-      ORDER BY qr.customer_id, qr.question_id
-    `)
-
-    // Calculate personality type for each customer
-    const personalityResults = new Map<number, { type: string; label: string; scores: Record<string, number> }>()
-    const customerQuizAnswers = new Map<number, Record<number, string>>()
-
-    for (const response of quizResponses) {
-      if (!customerQuizAnswers.has(response.customer_id)) {
-        customerQuizAnswers.set(response.customer_id, {})
-      }
-      customerQuizAnswers.get(response.customer_id)![response.question_id] = response.answer
-
-      if (!personalityResults.has(response.customer_id)) {
-        personalityResults.set(response.customer_id, { type: "", label: "", scores: { A: 0, B: 0, C: 0, D: 0, E: 0 } })
-      }
-      const result = personalityResults.get(response.customer_id)!
-      if (result.scores[response.answer] !== undefined) {
-        result.scores[response.answer]++
-      }
-    }
-
-    // Determine dominant type
-    for (const [customerId, result] of personalityResults) {
-      const entries = Object.entries(result.scores)
-      if (entries.length > 0) {
-        const dominant = entries.sort((a, b) => b[1] - a[1])[0]
-        result.type = dominant[0]
-        result.label = personalityMap.get(dominant[0]) || dominant[0]
-      }
-    }
-
-    // 4. Get pre-survey responses
+    // 2. Get pre-survey responses
     const preSurveyQuestions = await getMany<{
       id: number
       question_en: string
@@ -97,7 +45,7 @@ export async function GET() {
       preSurveyMap.get(response.user_id)![response.question_num] = response.score
     }
 
-    // 5. Get post-survey responses
+    // 3. Get post-survey responses
     const postSurveyQuestions = await getMany<{
       id: number
       question_en: string
@@ -118,7 +66,7 @@ export async function GET() {
       postSurveyMap.get(response.user_id)![response.question_num] = response.score
     }
 
-    // 6. Get booth stamps for each customer
+    // 4. Get booth stamps for each customer
     const stamps = await getMany<{
       customer_id: number
       booth_name: string
@@ -142,12 +90,7 @@ export async function GET() {
 
     // Sheet 1: Customer Summary
     const customerSummaryData = customers.map(c => {
-      const personality = personalityResults.get(c.id)
       const regData = c.registration_data || {}
-      
-      // Get personality from calculated results
-      const personalityType = personality?.label || ""
-      const personalityCode = personality?.type || ""
       
       // Build comma-separated survey answers
       const preAnswers = preSurveyMap.get(c.id)
@@ -167,8 +110,6 @@ export async function GET() {
         "Age": regData.age || "",
         "Gender": regData.gender || "",
         "Contact": regData.contact || regData.phone || "",
-        "Personality Type": personalityType,
-        "Personality Code": personalityCode,
         "Pre-Survey Status": c.pre_survey_completed ? "Yes" : "No",
         "Pre-Survey Answers": preSurveyAnswers,
         "Post-Survey Status": c.post_survey_completed ? "Yes" : "No",
@@ -182,31 +123,7 @@ export async function GET() {
     const summarySheet = XLSX.utils.json_to_sheet(customerSummaryData)
     XLSX.utils.book_append_sheet(workbook, summarySheet, "Customer Summary")
 
-    // Sheet 2: Quiz Responses
-    const quizData: Record<string, string | number>[] = []
-    for (const customer of customers) {
-      const answers = customerQuizAnswers.get(customer.id)
-      const personality = personalityResults.get(customer.id)
-      if (answers && Object.keys(answers).length > 0) {
-        const row: Record<string, string | number> = {
-          "Customer ID": customer.id,
-          "Email": customer.email,
-          "Personality Type": personality?.label || "",
-          "Personality Code": personality?.type || "",
-        }
-        for (const [questionId, answer] of Object.entries(answers)) {
-          row[`Q${questionId}`] = answer
-        }
-        quizData.push(row)
-      }
-    }
-
-    if (quizData.length > 0) {
-      const quizSheet = XLSX.utils.json_to_sheet(quizData)
-      XLSX.utils.book_append_sheet(workbook, quizSheet, "Quiz Responses")
-    }
-
-    // Sheet 3: Pre-Survey Responses
+    // Sheet 2: Pre-Survey Responses
     const preSurveyData: Record<string, string | number>[] = []
     for (const customer of customers) {
       const answers = preSurveyMap.get(customer.id)
@@ -227,7 +144,7 @@ export async function GET() {
       XLSX.utils.book_append_sheet(workbook, preSheet, "Pre-Survey")
     }
 
-    // Sheet 4: Post-Survey Responses
+    // Sheet 3: Post-Survey Responses
     const postSurveyData: Record<string, string | number>[] = []
     for (const customer of customers) {
       const answers = postSurveyMap.get(customer.id)
@@ -246,22 +163,6 @@ export async function GET() {
     if (postSurveyData.length > 0) {
       const postSheet = XLSX.utils.json_to_sheet(postSurveyData)
       XLSX.utils.book_append_sheet(workbook, postSheet, "Post-Survey")
-    }
-
-    // Sheet 5: Personality Distribution
-    const personalityDist: Record<string, string | number>[] = []
-    for (const [typeCode, label] of personalityMap) {
-      const count = Array.from(personalityResults.values()).filter(r => r.type === typeCode).length
-      personalityDist.push({
-        "Type Code": typeCode,
-        "Type Name": label,
-        "Count": count,
-      })
-    }
-
-    if (personalityDist.length > 0) {
-      const distSheet = XLSX.utils.json_to_sheet(personalityDist)
-      XLSX.utils.book_append_sheet(workbook, distSheet, "Personality Distribution")
     }
 
     // Generate buffer
