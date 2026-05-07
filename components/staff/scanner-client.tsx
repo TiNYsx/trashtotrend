@@ -118,19 +118,26 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
     if (!file) return
 
     setIsProcessingSnapshot(true)
-    addLog("Processing file...")
+    addLog("Analyzing photo...")
 
     try {
-      // 1. Load jsQR from CDN
-      if (!(window as any).jsQR) {
-        await new Promise((resolve, reject) => {
+      // 1. Load both libraries from CDN in parallel
+      await Promise.all([
+        !(window as any).jsQR ? new Promise((resolve, reject) => {
           const script = document.createElement("script")
           script.src = "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"
           script.onload = resolve
           script.onerror = reject
           document.head.appendChild(script)
-        })
-      }
+        }) : Promise.resolve(),
+        !(window as any).ZXing ? new Promise((resolve, reject) => {
+          const script = document.createElement("script")
+          script.src = "https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"
+          script.onload = resolve
+          script.onerror = reject
+          document.head.appendChild(script)
+        }) : Promise.resolve()
+      ])
 
       const img = new Image()
       img.src = URL.createObjectURL(file)
@@ -140,44 +147,71 @@ export function ScannerClient({ checkpoints }: { checkpoints: Checkpoint[] }) {
       const ctx = canvas.getContext("2d")
       if (!ctx) return
 
-      // Keep it within reasonable size for processing
-      const maxDim = 1024
+      // For file uploads, we can use a higher resolution for better accuracy
+      const maxDim = 1200
       let width = img.width
       let height = img.height
       if (width > maxDim || height > maxDim) {
-        if (width > height) {
-          height = (height / width) * maxDim
-          width = maxDim
-        } else {
-          width = (width / height) * maxDim
-          height = maxDim
-        }
+        const ratio = Math.min(maxDim / width, maxDim / height)
+        width *= ratio
+        height *= ratio
       }
 
       canvas.width = width
       canvas.height = height
+      
+      // Pass 1: Original Image
       ctx.drawImage(img, 0, 0, width, height)
+      
+      let decodedText = ""
+      
+      // Try ZXing first (it's often better at high-res/distorted images)
+      try {
+        const ZXing = (window as any).ZXing
+        const reader = new ZXing.BrowserQRCodeReader()
+        const result = await reader.decodeFromCanvas(canvas)
+        decodedText = result.getText()
+      } catch (e) {
+        // Try jsQR
+        const imageData = ctx.getImageData(0, 0, width, height)
+        const code = (window as any).jsQR(imageData.data, width, height, { inversionAttempts: "attemptBoth" })
+        if (code) decodedText = code.data
+      }
 
-      const imageData = ctx.getImageData(0, 0, width, height)
-      const code = (window as any).jsQR(imageData.data, imageData.width, imageData.height, {
-        inversionAttempts: "attemptBoth",
-      })
+      // Pass 2: If still nothing, try with high contrast
+      if (!decodedText) {
+        ctx.filter = "contrast(150%) grayscale(100%)"
+        ctx.drawImage(img, 0, 0, width, height)
+        
+        try {
+          const ZXing = (window as any).ZXing
+          const reader = new ZXing.BrowserQRCodeReader()
+          const result = await reader.decodeFromCanvas(canvas)
+          decodedText = result.getText()
+        } catch (e) {
+          const imageData = ctx.getImageData(0, 0, width, height)
+          const code = (window as any).jsQR(imageData.data, width, height, { inversionAttempts: "attemptBoth" })
+          if (code) decodedText = code.data
+        }
+      }
 
-      if (code) {
-        addLog("File Scanned!")
+      if (decodedText) {
+        addLog("Scan Success!")
         hasScannedRef.current = true
-        processScan(code.data)
+        processScan(decodedText)
       } else {
         setResult({
           type: "error",
-          message: lang === "th" ? "ไม่พบ QR ในรูปภาพ กรุณาลองใหม่" : "No QR found in image. Please try again.",
+          message: lang === "th" 
+            ? "ไม่พบ QR Code ในภาพ กรุณาถ่ายภาพให้ชัดเจน เห็น QR ครบทั้งแผ่น และไม่มีแสงสะท้อน" 
+            : "No QR found. Please ensure the photo is clear, shows the entire QR, and has no glare.",
         })
-        setTimeout(() => setResult(null), 3000)
+        setTimeout(() => setResult(null), 5000)
       }
       
       URL.revokeObjectURL(img.src)
     } catch (err) {
-      addLog("File error: " + err)
+      addLog("Analysis error: " + err)
     } finally {
       setIsProcessingSnapshot(false)
       if (fileInputRef.current) fileInputRef.current.value = ""
