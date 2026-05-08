@@ -21,8 +21,6 @@ export default async function AboutPage() {
       })
     }
     
-    // Debug logging to help troubleshoot in development environment
-    console.log("[AboutPage] Loaded settings keys:", Object.keys(settings))
   } catch (err) {
     console.error("[AboutPage] Error fetching settings:", err)
   }
