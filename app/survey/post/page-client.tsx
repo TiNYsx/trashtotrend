@@ -11,6 +11,8 @@ interface SurveyQuestion {
   id: number
   question_en: string
   question_th: string
+  question_type: string
+  options: { text_en: string; text_th: string }[] | null
   display_order: number
 }
 
@@ -22,7 +24,7 @@ export default function PostSurveyPage({ surveyQuestions }: PostSurveyClientProp
   const router = useRouter()
   const { lang } = useLanguage()
   const [currentQ, setCurrentQ] = useState(0)
-  const [answers, setAnswers] = useState<Record<number, number>>({})
+  const [answers, setAnswers] = useState<Record<number, string | number>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [isLocked, setIsLocked] = useState(true)
@@ -45,8 +47,8 @@ export default function PostSurveyPage({ surveyQuestions }: PostSurveyClientProp
     setIsLoading(false)
   }
 
-  const handleAnswer = (score: number) => {
-    const newAnswers = { ...answers, [currentQ]: score }
+  const handleAnswer = (answer: string | number) => {
+    const newAnswers = { ...answers, [currentQ]: answer }
     setAnswers(newAnswers)
 
     if (currentQ < surveyQuestions.length - 1) {
@@ -56,13 +58,45 @@ export default function PostSurveyPage({ surveyQuestions }: PostSurveyClientProp
     }
   }
 
-  const submitSurvey = async (finalAnswers: Record<number, number>) => {
+  const handleTextSubmit = () => {
+    const answer = answers[currentQ]
+    if (!answer || (typeof answer === 'string' && answer.trim() === '')) return
+    
+    if (currentQ < surveyQuestions.length - 1) {
+      setCurrentQ(currentQ + 1)
+    } else {
+      submitSurvey(answers)
+    }
+  }
+
+  const submitSurvey = async (finalAnswers: Record<number, string | number>) => {
     setIsSubmitting(true)
     try {
+      // Convert answers to numeric scores for database storage
+      const numericAnswers: Record<number, number> = {}
+      for (const [idx, answer] of Object.entries(finalAnswers)) {
+        const question = surveyQuestions[parseInt(idx)]
+        if (question.question_type === 'yes_no') {
+          // Map yes/no to 5/1
+          numericAnswers[parseInt(idx)] = answer === 'yes' ? 5 : 1
+        } else if (question.question_type === 'rating') {
+          numericAnswers[parseInt(idx)] = answer as number
+        } else if (question.question_type === 'multiple_choice') {
+          // Store the option index + 1 as score
+          const optionIndex = question.options?.findIndex(
+            opt => (lang === 'th' ? opt.text_th : opt.text_en) === answer
+          ) ?? 0
+          numericAnswers[parseInt(idx)] = optionIndex + 1
+        } else {
+          // For text, store as 3 (neutral)
+          numericAnswers[parseInt(idx)] = 3
+        }
+      }
+
       const res = await fetch('/api/survey/post', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers: finalAnswers })
+        body: JSON.stringify({ answers: numericAnswers })
       })
 
       setIsComplete(true)
@@ -245,23 +279,92 @@ export default function PostSurveyPage({ surveyQuestions }: PostSurveyClientProp
             </p>
           </motion.div>
 
-          {/* Scale buttons */}
-          <div className="w-full grid grid-cols-5 gap-2">
-            {[1, 2, 3, 4, 5].map((score) => (
-              <button
-                key={score}
-                onClick={() => handleAnswer(score)}
-                disabled={isSubmitting}
-                className="h-16 rounded-xl border border-border glass font-bold text-lg transition-all hover:bg-accent hover:text-accent-foreground hover:border-accent disabled:opacity-50"
-              >
-                {score}
-              </button>
-            ))}
-          </div>
-          <div className="w-full flex justify-between text-xs text-muted-foreground mt-3 px-2">
-            <span>{lang === 'th' ? 'ไม่เห็นด้วยอย่างยิ่ง' : 'Strongly Disagree'}</span>
-            <span>{lang === 'th' ? 'เห็นด้วยอย่างยิ่ง' : 'Strongly Agree'}</span>
-          </div>
+          {/* Dynamic question input based on question_type */}
+          {(() => {
+            const currentQuestion = surveyQuestions[currentQ]
+            const qType = currentQuestion.question_type
+
+            if (qType === 'yes_no') {
+              return (
+                <div className="w-full grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => handleAnswer('yes')}
+                    disabled={isSubmitting}
+                    className="h-16 rounded-xl border border-border glass font-bold text-lg transition-all hover:bg-accent hover:text-accent-foreground hover:border-accent disabled:opacity-50"
+                  >
+                    {lang === 'th' ? 'ใช่' : 'Yes'}
+                  </button>
+                  <button
+                    onClick={() => handleAnswer('no')}
+                    disabled={isSubmitting}
+                    className="h-16 rounded-xl border border-border glass font-bold text-lg transition-all hover:bg-accent hover:text-accent-foreground hover:border-accent disabled:opacity-50"
+                  >
+                    {lang === 'th' ? 'ไม่' : 'No'}
+                  </button>
+                </div>
+              )
+            }
+
+            if (qType === 'multiple_choice' && currentQuestion.options) {
+              return (
+                <div className="w-full space-y-3">
+                  {currentQuestion.options.map((opt, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleAnswer(lang === 'th' ? opt.text_th : opt.text_en)}
+                      disabled={isSubmitting}
+                      className="w-full p-4 rounded-xl border border-border glass text-left transition-all hover:bg-accent hover:text-accent-foreground hover:border-accent disabled:opacity-50"
+                    >
+                      <span className="font-medium">{lang === 'th' ? opt.text_th : opt.text_en}</span>
+                    </button>
+                  ))}
+                </div>
+              )
+            }
+
+            if (qType === 'text') {
+              return (
+                <div className="w-full space-y-4">
+                  <textarea
+                    value={(answers[currentQ] as string) || ''}
+                    onChange={(e) => setAnswers({ ...answers, [currentQ]: e.target.value })}
+                    placeholder={lang === 'th' ? 'พิมพ์คำตอบของคุณ...' : 'Type your answer...'}
+                    className="w-full h-32 p-4 rounded-xl border border-border bg-background resize-none"
+                    disabled={isSubmitting}
+                  />
+                  <button
+                    onClick={handleTextSubmit}
+                    disabled={isSubmitting || !(answers[currentQ] as string)?.trim()}
+                    className="w-full h-12 rounded-xl bg-accent text-accent-foreground font-semibold transition-all hover:bg-accent/90 disabled:opacity-50"
+                  >
+                    {lang === 'th' ? 'ถัดไป' : 'Next'}
+                  </button>
+                </div>
+              )
+            }
+
+            // Default: rating (1-5)
+            return (
+              <>
+                <div className="w-full grid grid-cols-5 gap-2">
+                  {[1, 2, 3, 4, 5].map((score) => (
+                    <button
+                      key={score}
+                      onClick={() => handleAnswer(score)}
+                      disabled={isSubmitting}
+                      className="h-16 rounded-xl border border-border glass font-bold text-lg transition-all hover:bg-accent hover:text-accent-foreground hover:border-accent disabled:opacity-50"
+                    >
+                      {score}
+                    </button>
+                  ))}
+                </div>
+                <div className="w-full flex justify-between text-xs text-muted-foreground mt-3 px-2">
+                  <span>{lang === 'th' ? 'ไม่เห็นด้วยอย่างยิ่ง' : 'Strongly Disagree'}</span>
+                  <span>{lang === 'th' ? 'เห็นด้วยอย่างยิ่ง' : 'Strongly Agree'}</span>
+                </div>
+              </>
+            )
+          })()}
         </div>
 
         {isSubmitting && (
