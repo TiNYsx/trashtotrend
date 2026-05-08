@@ -180,7 +180,14 @@ export function SurveySettingsClient({
                   </p>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs px-2 py-0.5 rounded bg-secondary text-muted-foreground">
-                      {q.question_type}
+                      {q.question_type === 'yes_no' 
+                        ? (lang === "th" ? "ใช่/ไม่" : "Yes/No")
+                        : q.question_type === 'rating'
+                        ? (lang === "th" ? "ให้คะแนน (1-5)" : "Rating (1-5)")
+                        : q.question_type === 'text'
+                        ? (lang === "th" ? "ข้อความ" : "Text")
+                        : (lang === "th" ? "ตัวเลือก" : "Multiple Choice")
+                      }
                     </span>
                     {q.is_required && (
                       <span className="text-xs text-destructive">
@@ -188,7 +195,7 @@ export function SurveySettingsClient({
                       </span>
                     )}
                   </div>
-                  {q.question_type === "multiple_choice" && q.options && q.options.length > 0 && (
+                  {(q.question_type === "multiple_choice" || q.question_type === "yes_no") && q.options && q.options.length > 0 && (
                     <div className="mt-2 space-y-1">
                       {q.options.map((opt, optIdx) => (
                         <div key={optIdx} className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -286,7 +293,7 @@ function SurveyQuestionModal({
       question_en: questionEn,
       question_th: questionTh,
       question_type: questionType,
-      options: questionType === "multiple_choice" && options.length > 0 ? options : null,
+      options: (questionType === "multiple_choice" || questionType === "yes_no") && options.length > 0 ? options : null,
       is_required: isRequired,
       display_order: question?.display_order || 0,
       is_active: true
@@ -326,30 +333,45 @@ function SurveyQuestionModal({
             <label className="text-sm font-medium">{lang === "th" ? "ประเภท" : "Type"}</label>
             <select
               value={questionType}
-              onChange={(e) => setQuestionType(e.target.value)}
+              onChange={(e) => {
+                const newType = e.target.value
+                setQuestionType(newType)
+                // Auto-populate yes/no options when switching to yes_no
+                if (newType === 'yes_no') {
+                  setOptions([
+                    { text_en: "Yes", text_th: "ใช่" },
+                    { text_en: "No", text_th: "ไม่" }
+                  ])
+                } else if (newType === 'rating') {
+                  setOptions([])
+                }
+              }}
               className="w-full h-10 px-3 rounded-lg border border-input bg-background"
             >
               <option value="rating">Rating (1-5)</option>
+              <option value="yes_no">Yes/No</option>
               <option value="text">Text</option>
               <option value="multiple_choice">Multiple Choice</option>
             </select>
           </div>
 
-          {/* Multiple Choice Options Editor */}
-          {questionType === "multiple_choice" && (
+          {/* Options Editor for Multiple Choice and Yes/No */}
+          {(questionType === "multiple_choice" || questionType === "yes_no") && (
             <div className="space-y-3 p-4 rounded-lg border border-border bg-secondary/30">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium">
                   {lang === "th" ? "ตัวเลือก" : "Options"}
                 </label>
-                <button
-                  type="button"
-                  onClick={handleAddOption}
-                  className="flex items-center gap-1 text-sm text-primary hover:underline"
-                >
-                  <Plus className="h-3 w-3" />
-                  {lang === "th" ? "เพิ่มตัวเลือก" : "Add Option"}
-                </button>
+                {questionType === "multiple_choice" && (
+                  <button
+                    type="button"
+                    onClick={handleAddOption}
+                    className="flex items-center gap-1 text-sm text-primary hover:underline"
+                  >
+                    <Plus className="h-3 w-3" />
+                    {lang === "th" ? "เพิ่มตัวเลือก" : "Add Option"}
+                  </button>
+                )}
               </div>
               
               {options.length === 0 && (
