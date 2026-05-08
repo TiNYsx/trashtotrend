@@ -13,17 +13,11 @@ A modern interactive exhibition platform supporting the "From Trash to Trend" ev
 ```
 Pre-event → Event Day → Post-event
    ↓           ↓            ↓
-Quiz    →  Register  →  Survey
-Ice Bath    Checkpoints   Reward
+Register  →  Checkpoints  →  Survey
+           Reward
 ```
 
-### 1. Personality Quiz
-
-- 5 personality types: Creator, Explorer, Observer, Player, Resetter
-- 5 questions, one per page with progress bar
-- Results recommend personalized activities
-
-### 2. Ice Bath Registration
+### 1. Event Registration
 
 - Limited capacity (configurable)
 - Time-based states: Closed → Open → Full
@@ -131,8 +125,6 @@ NEXT_PUBLIC_BASE_URL=https://your-domain.com
 | Route | Description |
 |-------|-------------|
 | `/` | Home page with HOOP branding |
-| `/quiz` | Personality quiz |
-| `/quiz/result` | Quiz results |
 | `/ice-bath` | Ice bath registration |
 | `/about` | About HOOP |
 | `/event/register` | Event registration with pre-survey |
@@ -150,7 +142,7 @@ NEXT_PUBLIC_BASE_URL=https://your-domain.com
 
 ### Users
 
-- Registration info, QR token, quiz type
+- Registration info, QR token
 - Survey completion flags
 - Checkpoint progress tracking
 
@@ -183,12 +175,6 @@ NEXT_PUBLIC_BASE_URL=https://your-domain.com
 - Pre/post responses linked to user
 - 1-5 scale scoring
 - Research-ready data
-
-### Personality Types
-
-- 5 types: Creator, Observer, Achiever, Explorer, Restorer
-- Bilingual names and descriptions
-- Linked to quiz responses
 
 ## Design System
 

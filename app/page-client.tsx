@@ -173,7 +173,7 @@ export default function HomeClient({ initialSettings }: HomeClientProps) {
             {/* CTA Buttons */}
             <div className="flex flex-col gap-4 pt-2 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
               <Link
-                href="/quiz"
+                href="/event/register"
                 className="group relative flex h-14 items-center justify-center gap-3 rounded-xl chrome-button font-semibold transition-all hover:scale-[1.02] glow-primary"
               >
                 <span className="chrome-text">{t.startJourney}</span>

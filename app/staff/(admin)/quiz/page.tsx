@@ -17,17 +17,6 @@ type Question = {
   quiz_category: string
 }
 
-type PersonalityType = {
-  id: number
-  type_code: string
-  name_en: string
-  name_th: string
-  description_en: string | null
-  description_th: string | null
-  display_order: number
-  is_active: boolean
-}
-
 type SettingsInput = {
   key: string
   value: string
@@ -45,15 +34,11 @@ export default async function QuizPage() {
   }
   
   let questions: Question[] = []
-  let personalityTypes: PersonalityType[] = []
   let settings: SettingsOutput = { start_journey_quiz_enabled: "true" }
 
   try {
     questions = await getMany<Question>(
       "SELECT * FROM quiz_questions WHERE quiz_category = 'journey' OR quiz_category IS NULL ORDER BY display_order ASC"
-    )
-    personalityTypes = await getMany<PersonalityType>(
-      "SELECT * FROM personality_types ORDER BY display_order ASC"
     )
     
     const settingsResult = await getMany<SettingsInput>(
@@ -69,7 +54,6 @@ export default async function QuizPage() {
   return (
     <QuizSettingsClient
       initialQuestions={questions}
-      initialPersonalityTypes={personalityTypes}
       initialSettings={settings}
     />
   )

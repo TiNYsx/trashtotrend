@@ -47,7 +47,6 @@ export async function GET() {
       name: user.email,
       email: user.email,
       qr_token: user.qr_token,
-      quiz_type: null,
       pre_survey_completed: user.pre_survey_completed,
       post_survey_completed: user.post_survey_completed,
       reward_claimed: false,

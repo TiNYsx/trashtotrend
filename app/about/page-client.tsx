@@ -177,7 +177,7 @@ export default function AboutClient({ initialSettings }: AboutClientProps) {
           {/* CTA */}
           <div className="text-center pt-4">
             <Link
-              href="/quiz"
+              href="/event/register"
               className="group inline-flex items-center gap-3 h-14 px-8 rounded-xl chrome-button font-semibold transition-all hover:scale-[1.02]"
             >
               <span className="chrome-text">{t.startJourney}</span>

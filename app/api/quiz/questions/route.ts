@@ -41,13 +41,13 @@ export async function POST(request: NextRequest) {
             `UPDATE quiz_questions 
              SET question_en = $1, question_th = $2, question_type = $3, options = $4, display_order = $5, is_active = $6, booth_id = $7, quiz_category = $8
              WHERE id = $9`,
-            [q.question_en, q.question_th, q.question_type || 'multiple_choice', JSON.stringify(q.options || []), q.display_order || 0, q.is_active ?? true, q.booth_id || null, q.quiz_category || category || 'personality', q.id]
+            [q.question_en, q.question_th, q.question_type || 'multiple_choice', JSON.stringify(q.options || []), q.display_order || 0, q.is_active ?? true, q.booth_id || null, q.quiz_category || category || 'journey', q.id]
           )
         } else {
           await client.query(
             `INSERT INTO quiz_questions (question_en, question_th, question_type, options, display_order, is_active, booth_id, quiz_category)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-            [q.question_en, q.question_th, q.question_type || 'multiple_choice', JSON.stringify(q.options || []), q.display_order || 0, q.is_active ?? true, q.booth_id || null, q.quiz_category || category || 'personality']
+            [q.question_en, q.question_th, q.question_type || 'multiple_choice', JSON.stringify(q.options || []), q.display_order || 0, q.is_active ?? true, q.booth_id || null, q.quiz_category || category || 'journey']
           )
         }
       }

@@ -24,7 +24,6 @@ interface UserData {
   name: string
   email: string
   qr_token: string
-  quiz_type: string | null
   checkpoints: Checkpoint[]
   checkpoint_count: number
   total_checkpoints: number
