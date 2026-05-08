@@ -59,7 +59,7 @@ export function QuizSettingsClient({
     setFormEn(q.question_en)
     setFormTh(q.question_th)
     setQuestionType(q.question_type || "multiple_choice")
-    setMcOptions((q.options || []).map(o => ({ ...o, type: (o as any).type || "A" })))
+    setMcOptions((q.options || []).map(o => ({ ...o, type: (o as any).type || "" })))
     setShowModal(true)
   }
 
@@ -69,14 +69,26 @@ export function QuizSettingsClient({
       return
     }
     
+    // For multiple choice and yes/no, ensure we have options
+    if ((questionType === "multiple_choice" || questionType === "yes_no") && mcOptions.length === 0) {
+      toast.error(lang === "th" ? "กรุณาเพิ่มตัวเลือกอย่างน้อย 1 ตัว" : "Please add at least 1 option")
+      return
+    }
+    
     setIsSaving(true)
     try {
+      // Determine options based on question type
+      let questionOptions = null
+      if (questionType === "multiple_choice" || questionType === "yes_no") {
+        questionOptions = mcOptions
+      }
+      
       const question = {
         id: editItem?.id || 0,
         question_en: formEn,
         question_th: formTh,
         question_type: questionType,
-        options: questionType === "multiple_choice" ? mcOptions : null,
+        options: questionOptions,
         display_order: editItem ? editItem.display_order : nextDisplayOrder,
         is_active: true,
         booth_id: null,
@@ -91,7 +103,7 @@ export function QuizSettingsClient({
       
       if (res.ok) {
         if (editItem) {
-          setQuestions(questions.map(q => q.id === editItem.id ? { ...q, question_en: formEn, question_th: formTh, question_type: questionType, options: questionType === "multiple_choice" ? mcOptions : null } : q))
+          setQuestions(questions.map(q => q.id === editItem.id ? { ...q, question_en: formEn, question_th: formTh, question_type: questionType, options: questionOptions } : q))
         } else {
           setQuestions([...questions, { ...question, id: Date.now() }])
         }
@@ -185,6 +197,18 @@ export function QuizSettingsClient({
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary">{idx + 1}</div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium">{lang === "th" ? q.question_th : q.question_en}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs px-2 py-0.5 rounded bg-secondary text-muted-foreground">
+                      {q.question_type === "yes_no"
+                        ? (lang === "th" ? "ใช่/ไม่" : "Yes/No")
+                        : q.question_type === "rating"
+                        ? (lang === "th" ? "ให้คะแนน (1-5)" : "Rating (1-5)")
+                        : q.question_type === "short_text"
+                        ? (lang === "th" ? "ข้อความสั้น" : "Short Text")
+                        : (lang === "th" ? "ตัวเลือก" : "Multiple Choice")
+                      }
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-1">
                   <button onClick={() => openEditQuestion(q)} className="p-2 text-muted-foreground hover:text-foreground">
@@ -223,26 +247,47 @@ export function QuizSettingsClient({
               </div>
               <div>
                 <label className="text-sm font-medium">{t("questionType")}</label>
-                <select value={questionType} onChange={(e) => setQuestionType(e.target.value)}
+                <select value={questionType} onChange={(e) => {
+                  const newType = e.target.value
+                  setQuestionType(newType)
+                  // Auto-populate yes/no options when switching to yes_no
+                  if (newType === "yes_no") {
+                    setMcOptions([
+                      { text_en: "Yes", text_th: "ใช่", type: "yes" },
+                      { text_en: "No", text_th: "ไม่", type: "no" }
+                    ])
+                  } else if (newType === "rating") {
+                    setMcOptions([])
+                  }
+                }}
                   className="w-full h-10 px-3 rounded-lg border border-input bg-background mt-1">
                   <option value="multiple_choice">{t("multipleChoice")}</option>
+                  <option value="yes_no">{lang === "th" ? "ใช่/ไม่" : "Yes/No"}</option>
+                  <option value="rating">{lang === "th" ? "ให้คะแนน (1-5)" : "Rating (1-5)"}</option>
                   <option value="short_text">{t("shortText")}</option>
                 </select>
               </div>
-              {questionType === "multiple_choice" && (
+              
+              {/* Show options editor for multiple choice and yes/no */}
+              {(questionType === "multiple_choice" || questionType === "yes_no") && (
                 <div className="space-y-3 p-4 rounded-lg border border-border bg-secondary/30">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium">{t("options")}</label>
-                    <button type="button" onClick={() => setMcOptions([...mcOptions, { text_en: "", text_th: "", type: "A" }])}
-                      className="flex items-center gap-1 text-sm text-primary hover:underline">
-                      <Plus className="h-3 w-3" /> {t("addOption")}
-                    </button>
+                    {questionType === "multiple_choice" && (
+                      <button type="button" onClick={() => setMcOptions([...mcOptions, { text_en: "", text_th: "", type: "" }])}
+                        className="flex items-center gap-1 text-sm text-primary hover:underline">
+                        <Plus className="h-3 w-3" /> {t("addOption")}
+                      </button>
+                    )}
                   </div>
                   {mcOptions.length === 0 && (
                     <p className="text-sm text-muted-foreground">{lang === "th" ? "ยังไม่มีตัวเลือก" : "No options yet"}</p>
                   )}
                   {mcOptions.map((opt, i) => (
                     <div key={i} className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-muted-foreground w-6">
+                        {String.fromCharCode(65 + i)}.
+                      </span>
                       <input value={opt.text_en} onChange={(e) => {
                         const copy = [...mcOptions]; copy[i] = { ...copy[i], text_en: e.target.value }; setMcOptions(copy)
                       }} placeholder={lang === "th" ? "ตัวเลือก (EN)" : "Option (EN)"}
@@ -251,21 +296,31 @@ export function QuizSettingsClient({
                         const copy = [...mcOptions]; copy[i] = { ...copy[i], text_th: e.target.value }; setMcOptions(copy)
                       }} placeholder={lang === "th" ? "ตัวเลือก (TH)" : "Option (TH)"}
                         className="flex-1 h-9 px-3 rounded-lg border border-input bg-background text-sm" />
-                      <select value={opt.type} onChange={(e) => {
-                        const copy = [...mcOptions]; copy[i] = { ...copy[i], type: e.target.value }; setMcOptions(copy)
-                      }} className="h-9 w-14 rounded-lg border border-input bg-background text-xs font-bold">
-                        <option value="A">A</option>
-                        <option value="B">B</option>
-                        <option value="C">C</option>
-                        <option value="D">D</option>
-                        <option value="E">E</option>
-                      </select>
-                      <button type="button" onClick={() => setMcOptions(mcOptions.filter((_, j) => j !== i))}
-                        className="p-1.5 text-muted-foreground hover:text-destructive">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      {questionType === "multiple_choice" && (
+                        <button type="button" onClick={() => setMcOptions(mcOptions.filter((_, j) => j !== i))}
+                          className="p-1.5 text-muted-foreground hover:text-destructive">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   ))}
+                </div>
+              )}
+              
+              {/* Show rating preview */}
+              {questionType === "rating" && (
+                <div className="p-4 rounded-lg border border-border bg-secondary/30">
+                  <label className="text-sm font-medium">{lang === "th" ? "ตัวอย่าง" : "Preview"}</label>
+                  <div className="flex items-center gap-2 mt-2">
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <div key={num} className="w-8 h-8 rounded-full border border-border bg-background flex items-center justify-center text-sm text-muted-foreground">
+                        {num}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {lang === "th" ? "ผู้ใช้จะเห็นตัวเลือกคะแนน 1-5" : "Users will see rating options 1-5"}
+                  </p>
                 </div>
               )}
 
