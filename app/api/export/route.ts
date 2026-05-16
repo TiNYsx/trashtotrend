@@ -28,42 +28,52 @@ export async function GET() {
     const preSurveyQuestions = await getMany<{
       id: number
       question_en: string
+      question_type: string
       display_order: number
-    }>("SELECT id, question_en, display_order FROM pre_survey_questions WHERE is_active = true ORDER BY display_order")
+    }>("SELECT id, question_en, question_type, display_order FROM pre_survey_questions WHERE is_active = true ORDER BY display_order")
 
     const preSurveyResponses = await getMany<{
       user_id: number
       question_num: number
       score: number
-    }>("SELECT user_id, question_num, score FROM pre_survey_responses ORDER BY user_id, question_num")
+      answer: string | null
+    }>("SELECT user_id, question_num, score, answer FROM pre_survey_responses ORDER BY user_id, question_num")
 
-    const preSurveyMap = new Map<number, Record<number, number>>()
+    const preSurveyMap = new Map<number, Record<number, { score: number; answer: string }>>()
     for (const response of preSurveyResponses) {
       if (!preSurveyMap.has(response.user_id)) {
         preSurveyMap.set(response.user_id, {})
       }
-      preSurveyMap.get(response.user_id)![response.question_num] = response.score
+      preSurveyMap.get(response.user_id)![response.question_num] = {
+        score: response.score,
+        answer: response.answer || ""
+      }
     }
 
     // 3. Get post-survey responses
     const postSurveyQuestions = await getMany<{
       id: number
       question_en: string
+      question_type: string
       display_order: number
-    }>("SELECT id, question_en, display_order FROM post_survey_questions WHERE is_active = true ORDER BY display_order")
+    }>("SELECT id, question_en, question_type, display_order FROM post_survey_questions WHERE is_active = true ORDER BY display_order")
 
     const postSurveyResponses = await getMany<{
       user_id: number
       question_num: number
       score: number
-    }>("SELECT user_id, question_num, score FROM post_survey_responses ORDER BY user_id, question_num")
+      answer: string | null
+    }>("SELECT user_id, question_num, score, answer FROM post_survey_responses ORDER BY user_id, question_num")
 
-    const postSurveyMap = new Map<number, Record<number, number>>()
+    const postSurveyMap = new Map<number, Record<number, { score: number; answer: string }>>()
     for (const response of postSurveyResponses) {
       if (!postSurveyMap.has(response.user_id)) {
         postSurveyMap.set(response.user_id, {})
       }
-      postSurveyMap.get(response.user_id)![response.question_num] = response.score
+      postSurveyMap.get(response.user_id)![response.question_num] = {
+        score: response.score,
+        answer: response.answer || ""
+      }
     }
 
     // 4. Get booth stamps for each customer
@@ -85,24 +95,32 @@ export async function GET() {
       stampsMap.get(stamp.customer_id)!.push(stamp.booth_name)
     }
 
+    // Helper to format answer for display
+    const formatAnswer = (answerData: { score: number; answer: string } | undefined, questionType: string): string => {
+      if (!answerData) return ""
+      // Use answer text if available, otherwise fallback to score
+      if (answerData.answer) return answerData.answer
+      return String(answerData.score)
+    }
+
     // Build Excel workbook
     const workbook = XLSX.utils.book_new()
 
     // Sheet 1: Customer Summary
     const customerSummaryData = customers.map(c => {
       const regData = c.registration_data || {}
-      
+
       // Build comma-separated survey answers
       const preAnswers = preSurveyMap.get(c.id)
-      const preSurveyAnswers = preAnswers 
-        ? preSurveyQuestions.map(q => preAnswers[q.display_order] ?? "").join(", ")
+      const preSurveyAnswers = preAnswers
+        ? preSurveyQuestions.map(q => formatAnswer(preAnswers[q.display_order], q.question_type)).join(", ")
         : ""
-      
+
       const postAnswers = postSurveyMap.get(c.id)
       const postSurveyAnswers = postAnswers
-        ? postSurveyQuestions.map(q => postAnswers[q.display_order] ?? "").join(", ")
+        ? postSurveyQuestions.map(q => formatAnswer(postAnswers[q.display_order], q.question_type)).join(", ")
         : ""
-      
+
       return {
         "ID": c.id,
         "Email": c.email,
@@ -133,7 +151,8 @@ export async function GET() {
           "Email": customer.email,
         }
         for (const question of preSurveyQuestions) {
-          row[`Q${question.display_order}: ${question.question_en}`] = answers[question.display_order] || ""
+          const answerData = answers[question.display_order]
+          row[`Q${question.display_order}: ${question.question_en}`] = formatAnswer(answerData, question.question_type)
         }
         preSurveyData.push(row)
       }
@@ -154,7 +173,8 @@ export async function GET() {
           "Email": customer.email,
         }
         for (const question of postSurveyQuestions) {
-          row[`Q${question.display_order}: ${question.question_en}`] = answers[question.display_order] || ""
+          const answerData = answers[question.display_order]
+          row[`Q${question.display_order}: ${question.question_en}`] = formatAnswer(answerData, question.question_type)
         }
         postSurveyData.push(row)
       }

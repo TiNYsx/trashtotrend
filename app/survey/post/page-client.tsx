@@ -72,31 +72,45 @@ export default function PostSurveyPage({ surveyQuestions }: PostSurveyClientProp
   const submitSurvey = async (finalAnswers: Record<number, string | number>) => {
     setIsSubmitting(true)
     try {
-      // Convert answers to numeric scores for database storage
-      const numericAnswers: Record<number, number> = {}
+      // Convert answers to score + answer text for database storage
+      const formattedAnswers: Record<number, { score: number; answer: string }> = {}
       for (const [idx, answer] of Object.entries(finalAnswers)) {
         const question = surveyQuestions[parseInt(idx)]
         if (question.question_type === 'yes_no') {
-          // Map yes/no to 5/1
-          numericAnswers[parseInt(idx)] = answer === 'yes' ? 5 : 1
+          // Store Yes/No as answer text, score 5/1
+          const isYes = answer === 'yes'
+          formattedAnswers[parseInt(idx)] = {
+            score: isYes ? 5 : 1,
+            answer: isYes ? (lang === 'th' ? 'ใช่' : 'Yes') : (lang === 'th' ? 'ไม่' : 'No')
+          }
         } else if (question.question_type === 'rating') {
-          numericAnswers[parseInt(idx)] = answer as number
+          // Store rating number as both score and answer
+          formattedAnswers[parseInt(idx)] = {
+            score: answer as number,
+            answer: String(answer)
+          }
         } else if (question.question_type === 'multiple_choice') {
-          // Store the option index + 1 as score
+          // Store option text as answer, option index + 1 as score
           const optionIndex = question.options?.findIndex(
             opt => (lang === 'th' ? opt.text_th : opt.text_en) === answer
           ) ?? 0
-          numericAnswers[parseInt(idx)] = optionIndex + 1
+          formattedAnswers[parseInt(idx)] = {
+            score: optionIndex + 1,
+            answer: String(answer)
+          }
         } else {
-          // For text, store as 3 (neutral)
-          numericAnswers[parseInt(idx)] = 3
+          // For text, store actual text answer, score as null
+          formattedAnswers[parseInt(idx)] = {
+            score: 0,
+            answer: String(answer)
+          }
         }
       }
 
       const res = await fetch('/api/survey/post', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers: numericAnswers })
+        body: JSON.stringify({ answers: formattedAnswers })
       })
 
       setIsComplete(true)

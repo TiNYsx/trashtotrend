@@ -16,12 +16,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'All questions must be answered' }, { status: 400 })
     }
 
-    for (const [questionNum, score] of Object.entries(answers)) {
+    for (const [questionNum, data] of Object.entries(answers)) {
+      const { score, answer } = data as { score: number; answer: string }
       await query(
-        `INSERT INTO pre_survey_responses (user_id, question_num, score) 
-         VALUES ($1, $2, $3)
-         ON CONFLICT (user_id, question_num) DO UPDATE SET score = $3`,
-        [session.id, parseInt(questionNum) + 1, score]
+        `INSERT INTO pre_survey_responses (user_id, question_num, score, answer)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (user_id, question_num) DO UPDATE SET score = $3, answer = $4`,
+        [session.id, parseInt(questionNum) + 1, score, answer || null]
       )
     }
 
