@@ -19,6 +19,7 @@ interface FormData {
 interface SurveyAnswer {
   questionNum: number
   score: number
+  answer: string
 }
 
 interface SurveyQuestion {
@@ -112,16 +113,29 @@ export default function RegisterClient({ surveyQuestions }: RegisterClientProps)
       )
       return optionIndex + 1
     } else {
-      // text or unknown
-      return 3
+      return 1
+    }
+  }
+
+  const getAnswerText = (question: SurveyQuestion, answer: string | number): string => {
+    if (question.question_type === 'yes_no') {
+      const isYes = answer === 'yes'
+      return isYes ? (lang === 'th' ? 'ใช่' : 'Yes') : (lang === 'th' ? 'ไม่' : 'No')
+    } else if (question.question_type === 'rating') {
+      return String(answer)
+    } else if (question.question_type === 'multiple_choice') {
+      return String(answer)
+    } else {
+      return String(answer)
     }
   }
 
   const handleSurveyAnswer = (answer: string | number) => {
     const currentQuestion = questions[currentSurveyQ]
     const numericScore = getNumericScore(currentQuestion, answer)
+    const answerText = getAnswerText(currentQuestion, answer)
     const newAnswers = [...surveyAnswers.filter(a => a.questionNum !== currentSurveyQ + 1)]
-    newAnswers.push({ questionNum: currentSurveyQ + 1, score: numericScore })
+    newAnswers.push({ questionNum: currentSurveyQ + 1, score: numericScore, answer: answerText })
     setSurveyAnswers(newAnswers)
     setTextAnswer('')
 

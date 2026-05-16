@@ -36,10 +36,10 @@ export async function POST(request: NextRequest) {
 
     // Save survey answers if provided
     if (surveyAnswers && Array.isArray(surveyAnswers)) {
-      for (const answer of surveyAnswers) {
+      for (const ans of surveyAnswers) {
         await query(
-          'INSERT INTO pre_survey_responses (user_id, question_num, score) VALUES ($1, $2, $3)',
-          [customerId, answer.questionNum, answer.score]
+          'INSERT INTO pre_survey_responses (user_id, question_num, score, answer) VALUES ($1, $2, $3, $4)',
+          [customerId, ans.questionNum, ans.score, ans.answer || null]
         )
       }
     }

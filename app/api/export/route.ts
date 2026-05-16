@@ -113,12 +113,12 @@ export async function GET() {
       // Build comma-separated survey answers
       const preAnswers = preSurveyMap.get(c.id)
       const preSurveyAnswers = preAnswers
-        ? preSurveyQuestions.map(q => formatAnswer(preAnswers[q.display_order], q.question_type)).join(", ")
+        ? preSurveyQuestions.map((q, idx) => formatAnswer(preAnswers[idx + 1], q.question_type)).join(", ")
         : ""
 
       const postAnswers = postSurveyMap.get(c.id)
       const postSurveyAnswers = postAnswers
-        ? postSurveyQuestions.map(q => formatAnswer(postAnswers[q.display_order], q.question_type)).join(", ")
+        ? postSurveyQuestions.map((q, idx) => formatAnswer(postAnswers[idx + 1], q.question_type)).join(", ")
         : ""
 
       return {
@@ -150,10 +150,10 @@ export async function GET() {
           "Customer ID": customer.id,
           "Email": customer.email,
         }
-        for (const question of preSurveyQuestions) {
-          const answerData = answers[question.display_order]
+        preSurveyQuestions.forEach((question, idx) => {
+          const answerData = answers[idx + 1]
           row[`Q${question.display_order}: ${question.question_en}`] = formatAnswer(answerData, question.question_type)
-        }
+        })
         preSurveyData.push(row)
       }
     }
@@ -172,10 +172,10 @@ export async function GET() {
           "Customer ID": customer.id,
           "Email": customer.email,
         }
-        for (const question of postSurveyQuestions) {
-          const answerData = answers[question.display_order]
+        postSurveyQuestions.forEach((question, idx) => {
+          const answerData = answers[idx + 1]
           row[`Q${question.display_order}: ${question.question_en}`] = formatAnswer(answerData, question.question_type)
-        }
+        })
         postSurveyData.push(row)
       }
     }

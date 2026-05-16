@@ -82,12 +82,13 @@ export function SurveySettingsClient({
   }
 
   const handleAddQuestion = (q: SurveyQuestion) => {
-    // Generate a temporary negative ID that fits within standard integers
+    const list = activeTab === "pre" ? preQuestions : postQuestions
+    const maxOrder = list.reduce((max, q) => Math.max(max, q.display_order || 0), 0)
     const tempId = -Math.floor(Math.random() * 1000000)
     if (activeTab === "pre") {
-      setPreQuestions([...preQuestions, { ...q, id: tempId }])
+      setPreQuestions([...preQuestions, { ...q, id: tempId, display_order: maxOrder + 1 }])
     } else {
-      setPostQuestions([...postQuestions, { ...q, id: tempId }])
+      setPostQuestions([...postQuestions, { ...q, id: tempId, display_order: maxOrder + 1 }])
     }
     setShowAdd(false)
   }

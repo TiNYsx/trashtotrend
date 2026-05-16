@@ -99,9 +99,9 @@ export default function PostSurveyPage({ surveyQuestions }: PostSurveyClientProp
             answer: String(answer)
           }
         } else {
-          // For text, store actual text answer, score as null
+          // For text, store actual text answer
           formattedAnswers[parseInt(idx)] = {
-            score: 0,
+            score: 1,
             answer: String(answer)
           }
         }
